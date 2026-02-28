@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Zap } from 'lucide-react';
 import api from '../api/client';
 
 function AuthPage() {
@@ -81,17 +82,34 @@ function AuthPage() {
 
   return (
     <main className="auth-shell">
+      <div className="auth-bg-orb-1" />
+      <div className="auth-bg-orb-2" />
+
       <section className="auth-card">
-        <h1>Sign in to LaunchRadar</h1>
-        <p>Continue with your Google account.</p>
+        {/* Logo */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
+          <span className="auth-logo-icon">
+            <Zap size={14} />
+          </span>
+          <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text)' }}>LaunchRadar</span>
+        </Link>
 
+        <h1 className="auth-title">Welcome back</h1>
+        <p className="auth-sub">Sign in to track launches, save favorites, and submit products.</p>
+
+        {/* Google button */}
         <div className="google-btn-wrap" ref={buttonRef} />
-        {loading ? <p>Signing you in...</p> : null}
-        {error ? <p className="form-error">{error}</p> : null}
 
-        <p className="inline-links">
-          <Link to="/">Go to Public Listings</Link>
-        </p>
+        {loading && (
+          <p style={{ textAlign: 'center', color: 'var(--text-2)', fontSize: '0.875rem', marginTop: 10 }}>
+            Signing you in…
+          </p>
+        )}
+        {error && <p className="form-error" style={{ marginTop: 10 }}>{error}</p>}
+
+        <Link to="/" className="auth-back">
+          <ArrowLeft size={14} /> Back to products
+        </Link>
       </section>
     </main>
   );

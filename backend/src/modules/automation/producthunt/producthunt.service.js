@@ -3,6 +3,7 @@ const ProductHuntTopic = require('./producthunt-topic.model');
 const ProductHuntProduct = require('./producthunt-product.model');
 const ProductHuntTopProduct = require('./producthunt-top-product.model');
 const ProductHuntTrending = require('./producthunt-trending.model');
+const logger = require('../../../config/logger');
 
 const PRODUCTHUNT_GRAPHQL_URL = 'https://api.producthunt.com/v2/api/graphql';
 const TOP_PRODUCTS_SYNC_INTERVAL_MS = 5 * 60 * 1000;
@@ -737,11 +738,11 @@ function startTopProductsDailyCron() {
     try {
       const result = await syncTopProductsSnapshot(TOP_PRODUCTS_DAILY_INSERT_COUNT, null);
       const cleanup = await cleanupOldTopProducts(TOP_PRODUCTS_DAILY_DELETE_COUNT);
-      console.log(
+      logger.info(
         `[ProductHunt Cron] synced snapshot ${result.snapshotDate}, saved=${result.saved}, fallback=${result.fallbackUsed}, oldDeleted=${cleanup.deleted}`
       );
     } catch (error) {
-      console.error('[ProductHunt Cron] sync failed', error);
+      logger.error('[ProductHunt Cron] sync failed', error);
     }
   };
 
@@ -810,11 +811,11 @@ function startProductHuntWeeklyCleanupCron() {
   const runCleanup = async () => {
     try {
       const result = await cleanupLowVoteProducts(WEEKLY_CLEANUP_DELETE_COUNT);
-      console.log(
+      logger.info(
         `[ProductHunt Weekly Cleanup] requested=${result.requested}, candidates=${result.candidates}, deleted=${result.deleted}`
       );
     } catch (error) {
-      console.error('[ProductHunt Weekly Cleanup] failed', error);
+      logger.error('[ProductHunt Weekly Cleanup] failed', error);
     }
   };
 
@@ -842,11 +843,11 @@ function startProductHuntWeeklyRefreshCron() {
   const runRefresh = async () => {
     try {
       const result = await refreshAllTopicProductsWeekly();
-      console.log(
+      logger.info(
         `[ProductHunt Weekly Refresh] topicsInserted=${result.topics.inserted}, topicsProcessed=${result.products.topicsProcessed}, totalInserted=${result.products.totalInserted}, totalUpdated=${result.products.totalUpdated}`
       );
     } catch (error) {
-      console.error('[ProductHunt Weekly Refresh] failed', error);
+      logger.error('[ProductHunt Weekly Refresh] failed', error);
     }
   };
 
@@ -879,11 +880,11 @@ function startTrendingProductsDailyCron() {
   const runSync = async () => {
     try {
       const result = await syncTrendingProductsDaily();
-      console.log(
+      logger.info(
         `[ProductHunt Trending Cron] fetched=${result.fetched}, inserted=${result.inserted}, removed=${result.removed}, date=${result.sourceDate}`
       );
     } catch (error) {
-      console.error('[ProductHunt Trending Cron] sync failed', error);
+      logger.error('[ProductHunt Trending Cron] sync failed', error);
     }
   };
 

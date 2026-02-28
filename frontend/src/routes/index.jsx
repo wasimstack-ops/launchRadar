@@ -3,6 +3,9 @@ import LoginPage from '../pages/LoginPage';
 import AuthPage from '../pages/AuthPage';
 import ProfilePage from '../pages/ProfilePage';
 import ListingsPage from '../pages/ListingsPage';
+import CryptoPage from '../pages/CryptoPage';
+import AirdropsPage from '../pages/AirdropsPage';
+import AgentsPage from '../pages/AgentsPage';
 import CategoryProductsPage from '../pages/CategoryProductsPage';
 import ListingFormPage from '../pages/ListingFormPage';
 import SubmitListingPage from '../pages/SubmitListingPage';
@@ -14,6 +17,9 @@ function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<ListingsPage />} />
+        <Route path="/crypto" element={<CryptoPage />} />
+        <Route path="/agents" element={<AgentsPage />} />
+        <Route path="/airdrops" element={<AirdropsPage />} />
         <Route path="/category/:slug" element={<CategoryProductsPage />} />
         <Route path="/listing/:id" element={<ListingFormPage />} />
 

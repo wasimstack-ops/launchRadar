@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const authSchema = new mongoose.Schema(
   {
@@ -13,6 +13,7 @@ const authSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     passwordHash: {
       type: String,
@@ -29,6 +30,14 @@ const authSchema = new mongoose.Schema(
         ref: 'Listing',
       },
     ],
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    digestSubscribed: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

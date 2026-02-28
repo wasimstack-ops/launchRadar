@@ -267,14 +267,22 @@ Estimated Completion: ~75%
 
 ### Phase 5 - Automation & Scaling
 
+Completed:
+
+- Product Hunt automation pipeline (topics, products by topic, top-today snapshots, trending feed)
+- Cron jobs for Product Hunt top products, Product Hunt trending, and AI news
+- Weekly Product Hunt refresh + low-vote cleanup routines
+- RSS multi-source ingestion endpoint (`/api/admin/automation/rss-test`)
+- GitHub automation endpoint (`/api/admin/automation/github-test`)
+- AI News module (`/api/news`, `/api/news/sources`, `/api/admin/news/fetch`) with duplicate-safe upsert and cleanup
+
 Pending:
 
-- Cron jobs
-- RSS ingestion
 - Bulk CSV upload
 - Analytics dashboard
+- Centralized ingestion observability dashboard
 
-Estimated Completion: 0%
+Estimated Completion: ~70%
 
 ### Phase 6 - PWA & Distribution
 
@@ -373,6 +381,86 @@ Estimated Completion: 0%
 - 2026-02-23: Added Product Hunt trending pipeline (`producthunt_trending`) with daily replace cron (10 inserted / previous 10 removed), public trending API, and animated trending UI panel integration.
 - 2026-02-23: Added rotating "Trending Apps" banner above Top Products with arrow navigation and pause/play control; right-side trending area replaced with reserved placeholder panel.
 - 2026-02-24: Top Products cron updated to run every 5 minutes with immediate warm-start sync on server boot, fetch size increased to 50 per run, rolling cleanup target set to 50 old records per run, and snapshot dedupe preserved via unique upsert key (`ph_id + snapshotDate`).
+- 2026-02-24: Added AI News module (`/api/news`, `/api/news/sources`) with RSS ingestion, duplicate-safe upsert by link, admin manual fetch endpoint (`POST /api/admin/news/fetch`), and background news cron startup/shutdown wiring in server lifecycle.
+- 2026-02-24: News automation updated to daily cron schedule (UTC) with rolling cleanup (age + max record cap), ensuring new entries are ingested and older news is removed automatically.
+- 2026-02-24: Public homepage reserved panel replaced with formatted "Latest AI News" feed powered by `/api/news` (source, title, summary, publish date, and external link).
+- 2026-02-24: News cron switched to 2-hour interval with immediate boot sync, while preserving dedupe and cleanup; AI filter tightened with exclusion keywords to suppress non-tech conflict/politics headlines.
+- 2026-02-28: Public homepage category strip title updated from "Best Products" to "Categories" for clearer IA.
+- 2026-02-28: Latest AI News panel refined by removing per-item source label text to keep the right rail cleaner.
+- 2026-02-28: Added `AlertSubscription` + `emailService` with subscription/unsubscription endpoints and admin subscription listing API.
+- 2026-02-28: Added `aiSummaryService` (OpenAI `gpt-4o-mini`) integration in news ingestion for newly inserted articles.
+
+## Repository Audit (2026-02-28)
+
+Code-level verification completed across backend and frontend routes/modules.
+
+### Verified Backend Modules
+
+- `listings` (public read, admin CRUD, ratings, popularity sorting)
+- `auth` (register/login/google/me + favorites)
+- `leads` (public waitlist capture)
+- `submissions` (user submit + admin moderation/approve/reject)
+- `news` (public feed + admin manual fetch + 2-hour cron sync + cleanup)
+- automation (`producthunt`, `github`, `rss`, `hackernews`)
+
+### Verified Frontend Surfaces
+
+- Public routes: `/`, `/category/:slug`, `/listing/:id`
+- Auth/user routes: `/auth`, `/me`, `/submit`
+- Admin routes: `/admin/login`, `/admin`
+- Homepage includes: Product Hunt categories, top products list with pagination, trending banner, and latest AI news panel
+
+### Remaining Gaps (Codebase Snapshot)
+
+- Phase 4: file upload workflow for submissions is still pending
+- Phase 5: bulk CSV import and analytics dashboard are not yet implemented
+- Phase 6: PWA/distribution tasks remain pending
+
+## Backend Hardening Todo Status (2026-02-28)
+
+Completed:
+
+- Install backend dependencies (security + mail + OpenAI stack)
+- Hardened `backend/src/app.js` middleware pipeline
+- News schema expanded with `voteCount`, `commentCount`, `aiSummary`
+- Bookmark module implemented (`model + service + controller + routes`)
+- Vote module implemented (`model + service + controller + leaderboard routes`)
+- Comment module implemented (`threaded comments: create/list/delete`)
+- FetchLog module implemented (`model + service + controller + admin analytics routes`)
+- News fetcher enhanced (retry + timeout + dedup normalization)
+- New modules wired into `backend/src/routes/index.js`
+- `emailService` + `AlertSubscription` module and routes implemented
+- `aiSummaryService` (OpenAI `gpt-4o-mini`) integrated into ingestion flow
+
+Pending:
+
+- None from this hardening todo block
+
+## Start-to-End Implementation Checklist (2026-02-28)
+
+| Area | Item | Status |
+|---|---|---|
+| Phase 1 | Backend core (Express, Mongo, env, error handling) | ✅ |
+| Phase 1 | Listings CRUD + admin key routes | ✅ |
+| Phase 1B | Admin UI setup | ✅ |
+| Phase 1B | Listings UI CRUD | ✅ |
+| Phase 1 Extension | Waitlist email capture | ✅ |
+| Phase 2 | JWT + Google auth + protected routes | ✅ |
+| Phase 2 | Favorites + rating system | ✅ |
+| Phase 3 | Public dashboard redesign + filtering/sorting + dark mode | ✅ |
+| Phase 3 | Popular metric implementation | ✅ |
+| Phase 4 | Submission + moderation backend | ✅ |
+| Phase 4 | Submission + moderation frontend | ✅ |
+| Phase 4 | File upload workflow | ⬜ |
+| Phase 5 | Product Hunt automation + cron + trending | ✅ |
+| Phase 5 | RSS + GitHub + HackerNews integrations | ✅ |
+| Phase 5 | AI News module + cron + cleanup | ✅ |
+| Phase 5 | Bookmarks / Votes / Comments / FetchLog modules | ✅ |
+| Phase 5 | AlertSubscription + email service | ✅ |
+| Phase 5 | AI summaries via OpenAI | ✅ |
+| Phase 5 | Bulk CSV upload | ⬜ |
+| Phase 5 | Analytics dashboard UI | ⬜ |
+| Phase 6 | PWA + distribution tasks | ⬜ |
 
 ## Command Reference
 
@@ -474,41 +562,119 @@ curl.exe -X GET "http://localhost:5000/api/admin/automation/github-test" -H "x-a
 curl.exe -X GET "http://localhost:5000/api/admin/automation/rss-test" -H "x-admin-key: dev_admin_key_change_me"
 ```
 
+### Airdrops External - Manual Fetch (Admin)
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/admin/airdrops/external/fetch?force=true" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+### Airdrops External - Ops Sync (Admin Unified Route)
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/admin/ops/airdrops/external-sync" -H "x-admin-key: dev_admin_key_change_me" -H "Content-Type: application/json" --data "{\"force\":true}"
+```
+
+### Airdrops - Public Feed
+
+```bash
+curl.exe "http://localhost:5000/api/airdrops"
+```
+
+### News - Manual Fetch (Admin)
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/admin/news/fetch" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+### News - Public Feed
+
+```bash
+curl.exe "http://localhost:5000/api/news?limit=8&page=1"
+```
+
+### News - Sources Summary
+
+```bash
+curl.exe "http://localhost:5000/api/news/sources"
+```
+
+### Alerts - Subscribe / Unsubscribe / Admin List
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/alerts/subscribe" -H "Content-Type: application/json" --data "{\"email\":\"user@example.com\",\"frequency\":\"weekly\"}"
+curl.exe -X POST "http://localhost:5000/api/alerts/unsubscribe" -H "Content-Type: application/json" --data "{\"email\":\"user@example.com\"}"
+curl.exe -X GET "http://localhost:5000/api/admin/alerts/subscriptions?page=1&limit=20" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+### Alerts Testing Flow (End-to-End)
+
+```bash
+cd c:\MVP-Billionds\LaunchRadar\backend
+npm run dev
+```
+
+```bash
+curl.exe "http://localhost:5000/health"
+```
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/alerts/subscribe" -H "Content-Type: application/json" --data "{\"email\":\"your-email@gmail.com\",\"frequency\":\"weekly\"}"
+```
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/alerts/unsubscribe" -H "Content-Type: application/json" --data "{\"email\":\"your-email@gmail.com\"}"
+```
+
+```bash
+curl.exe "http://localhost:5000/api/admin/alerts/subscriptions?page=1&limit=20" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+```bash
+curl.exe -X POST "http://localhost:5000/api/admin/news/fetch" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+```bash
+curl.exe "http://localhost:5000/api/news?limit=5&page=1"
+```
+
+```bash
+curl.exe "http://localhost:5000/api/admin/analytics/fetch-logs/summary?days=7" -H "x-admin-key: dev_admin_key_change_me"
+```
+
+### News - Bookmark APIs (Auth)
+
+```bash
+curl.exe -X GET "http://localhost:5000/api/news/bookmarks" -H "Authorization: Bearer <USER_JWT>"
+curl.exe -X POST "http://localhost:5000/api/news/<NEWS_ID>/bookmark" -H "Authorization: Bearer <USER_JWT>"
+curl.exe -X DELETE "http://localhost:5000/api/news/<NEWS_ID>/bookmark" -H "Authorization: Bearer <USER_JWT>"
+```
+
+### News - Vote APIs (Auth + Public Leaderboard)
+
+```bash
+curl.exe -X GET "http://localhost:5000/api/news/leaderboard?limit=20&page=1"
+curl.exe -X POST "http://localhost:5000/api/news/<NEWS_ID>/vote" -H "Authorization: Bearer <USER_JWT>"
+curl.exe -X DELETE "http://localhost:5000/api/news/<NEWS_ID>/vote" -H "Authorization: Bearer <USER_JWT>"
+```
+
+### News - Comment APIs (Threaded)
+
+```bash
+curl.exe -X GET "http://localhost:5000/api/news/<NEWS_ID>/comments"
+curl.exe -X POST "http://localhost:5000/api/news/<NEWS_ID>/comments" -H "Authorization: Bearer <USER_JWT>" -H "Content-Type: application/json" --data "{\"content\":\"Great launch\"}"
+curl.exe -X DELETE "http://localhost:5000/api/news/comments/<COMMENT_ID>" -H "Authorization: Bearer <USER_JWT>"
+```
+
+### Fetch Logs - Admin Analytics
+
+```bash
+curl.exe -X GET "http://localhost:5000/api/admin/analytics/fetch-logs?page=1&limit=20" -H "x-admin-key: dev_admin_key_change_me"
+curl.exe -X GET "http://localhost:5000/api/admin/analytics/fetch-logs/summary?days=7" -H "x-admin-key: dev_admin_key_change_me"
+```
+
 ### HackerNews Automation - Manual Service Trigger (Node One-liner)
 
 ```bash
 cd c:\MVP-Billionds\LaunchRadar\backend
 node -e "const { connectDB } = require('./src/config/db'); const { fetchHackerNewsAI } = require('./src/modules/automation/hackernews/hackernews.service'); (async () => { await connectDB(); const result = await fetchHackerNewsAI(); console.log(result); process.exit(0); })().catch((e) => { console.error(e); process.exit(1); });"
 ```
-
-🥇 Path A — Stabilize & Optimize (Recommended)
-
-Instead of adding more sources:
-
-Add cron scheduling cleanly
-
-Add ingestion logging dashboard
-
-Add duplicate monitoring
-
-Add rate limit protection
-
-Add ingestion error tracking
-
-Clean normalization layer across all sources
-
-Make automation production-ready.
-
-🥈 Path B — Expand Sources
-
-Next potential source:
-
-HuggingFace models API
-
-Kaggle datasets
-
-IndieHackers
-
-AI startup newsletters
-
-But that increases complexity.

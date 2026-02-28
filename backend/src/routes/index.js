@@ -3,9 +3,19 @@ const listingRoutes = require('../modules/listings/listing.routes');
 const leadRoutes = require('../modules/leads/lead.routes');
 const authRoutes = require('../modules/auth/auth.routes');
 const submissionRoutes = require('../modules/submissions/submission.routes');
+const newsRoutes = require('../modules/news/news.routes');
+const cryptoRoutes = require('../modules/crypto/crypto.routes');
+const alertSubscriptionRoutes = require('../modules/alerts/alert-subscription.routes');
+const bookmarkRoutes = require('../modules/bookmarks/bookmark.routes');
+const voteRoutes = require('../modules/votes/vote.routes');
+const commentRoutes = require('../modules/comments/comment.routes');
+const fetchLogRoutes = require('../modules/fetch-logs/fetch-log.routes');
 const githubAutomationRoutes = require('../modules/automation/github/github.routes');
 const rssAutomationRoutes = require('../modules/automation/rss/rss.routes');
 const productHuntAutomationRoutes = require('../modules/automation/producthunt/producthunt.routes');
+const adminOpsRoutes = require('../modules/admin/admin-ops.routes');
+const airdropScraperRoutes = require('../modules/airdrops/external/airdropScraper.routes');
+const agentRoutes = require('../modules/agents/agent.routes');
 
 const router = express.Router();
 
@@ -13,8 +23,18 @@ router.use(listingRoutes);
 router.use(leadRoutes);
 router.use(authRoutes);
 router.use(submissionRoutes);
+router.use(newsRoutes);
+router.use(cryptoRoutes);
+router.use(alertSubscriptionRoutes);
+router.use(bookmarkRoutes);
+router.use(voteRoutes);
+router.use(commentRoutes);
+router.use(fetchLogRoutes);
 router.use(githubAutomationRoutes);
 router.use(rssAutomationRoutes);
 router.use(productHuntAutomationRoutes);
+router.use(adminOpsRoutes);
+router.use(airdropScraperRoutes);
+router.use(agentRoutes);
 
 module.exports = router;

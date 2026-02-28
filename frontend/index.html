@@ -1,9 +1,28 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LaunchRadar</title>
+    <title>LaunchRadar — Track Every AI Launch</title>
+    <meta name="description" content="Real-time discovery of the hottest AI tools, products, and startups from Product Hunt and beyond." />
+
+    <!-- Preconnect for fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Anti-FOUC: apply saved theme before React renders -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('lr-theme');
+          if (t === 'light') document.body.classList.add('theme-light');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
