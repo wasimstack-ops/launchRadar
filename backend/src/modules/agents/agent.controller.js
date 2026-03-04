@@ -12,11 +12,7 @@ function toPositiveInt(value, fallback) {
 
 const fetchAgentsController = asyncHandler(async (req, res) => {
   const data = await agentService.runAgentsSyncCycle({ trigger: 'admin' });
-  res.status(200).json({
-    success: true,
-    message: 'Agents sync completed successfully',
-    data,
-  });
+  res.status(200).json({ success: true, message: 'Agents sync completed successfully', data });
 });
 
 const getLatestAgentsController = asyncHandler(async (req, res) => {
@@ -32,12 +28,17 @@ const getTrendingAgentsController = asyncHandler(async (req, res) => {
 const getRepoAgentsController = asyncHandler(async (req, res) => {
   const page = toPositiveInt(req.query.page, 1);
   const limit = toPositiveInt(req.query.limit, 20);
-  const data = await agentService.getRepoAgents({ page, limit });
+  const sort = req.query.sort === 'latest' ? 'latest' : 'trending';
+  const data = await agentService.getAgentsPaginated({ category: 'repo', sort, page, limit });
   res.status(200).json({ success: true, data });
 });
 
+// GET /agents/ai?page=1&limit=20&sort=trending|latest
 const getAiAgentsController = asyncHandler(async (req, res) => {
-  const data = await agentService.getAgentsByCategory('agent');
+  const page = toPositiveInt(req.query.page, 1);
+  const limit = toPositiveInt(req.query.limit, 20);
+  const sort = req.query.sort === 'latest' ? 'latest' : 'trending';
+  const data = await agentService.getAgentsPaginated({ category: 'agent', sort, page, limit });
   res.status(200).json({ success: true, data });
 });
 

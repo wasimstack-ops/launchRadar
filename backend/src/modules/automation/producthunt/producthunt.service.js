@@ -9,11 +9,9 @@ const PRODUCTHUNT_GRAPHQL_URL = 'https://api.producthunt.com/v2/api/graphql';
 const TOP_PRODUCTS_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const TOP_PRODUCTS_DAILY_INSERT_COUNT = 50;
 const TOP_PRODUCTS_DAILY_DELETE_COUNT = 50;
-const WEEKLY_CLEANUP_DAY_UTC = 0; // Sunday
 const WEEKLY_CLEANUP_HOUR_UTC = 0;
 const WEEKLY_CLEANUP_MINUTE_UTC = 15;
 const WEEKLY_CLEANUP_DELETE_COUNT = 40;
-const WEEKLY_REFRESH_DAY_UTC = 0; // Sunday
 const WEEKLY_REFRESH_HOUR_UTC = 0;
 const WEEKLY_REFRESH_MINUTE_UTC = 5;
 const TRENDING_SYNC_HOUR_UTC = 0;
@@ -717,20 +715,6 @@ function getMsUntilNextUtcRun(hour = 0, minute = DAILY_SYNC_DELAY_MINUTES) {
   return nextRun.getTime() - now.getTime();
 }
 
-function getMsUntilNextUtcWeeklyRun(day = WEEKLY_CLEANUP_DAY_UTC, hour = WEEKLY_CLEANUP_HOUR_UTC, minute = WEEKLY_CLEANUP_MINUTE_UTC) {
-  const now = new Date();
-  const nextRun = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour, minute, 0, 0));
-
-  const currentDay = now.getUTCDay();
-  let daysToAdd = (day - currentDay + 7) % 7;
-  if (daysToAdd === 0 && nextRun.getTime() <= now.getTime()) {
-    daysToAdd = 7;
-  }
-  nextRun.setUTCDate(nextRun.getUTCDate() + daysToAdd);
-
-  return nextRun.getTime() - now.getTime();
-}
-
 function startTopProductsDailyCron() {
   if (dailySyncStartTimeout || dailySyncInterval) return;
 
@@ -812,17 +796,17 @@ function startProductHuntWeeklyCleanupCron() {
     try {
       const result = await cleanupLowVoteProducts(WEEKLY_CLEANUP_DELETE_COUNT);
       logger.info(
-        `[ProductHunt Weekly Cleanup] requested=${result.requested}, candidates=${result.candidates}, deleted=${result.deleted}`
+        `[ProductHunt Daily Cleanup] requested=${result.requested}, candidates=${result.candidates}, deleted=${result.deleted}`
       );
     } catch (error) {
-      logger.error('[ProductHunt Weekly Cleanup] failed', error);
+      logger.error('[ProductHunt Daily Cleanup] failed', error);
     }
   };
 
-  const waitMs = getMsUntilNextUtcWeeklyRun();
+  const waitMs = getMsUntilNextUtcRun(WEEKLY_CLEANUP_HOUR_UTC, WEEKLY_CLEANUP_MINUTE_UTC);
   weeklyCleanupStartTimeout = setTimeout(() => {
     runCleanup();
-    weeklyCleanupInterval = setInterval(runCleanup, 7 * 24 * 60 * 60 * 1000);
+    weeklyCleanupInterval = setInterval(runCleanup, 24 * 60 * 60 * 1000);
   }, waitMs);
 }
 
@@ -844,22 +828,18 @@ function startProductHuntWeeklyRefreshCron() {
     try {
       const result = await refreshAllTopicProductsWeekly();
       logger.info(
-        `[ProductHunt Weekly Refresh] topicsInserted=${result.topics.inserted}, topicsProcessed=${result.products.topicsProcessed}, totalInserted=${result.products.totalInserted}, totalUpdated=${result.products.totalUpdated}`
+        `[ProductHunt Daily Refresh] topicsInserted=${result.topics.inserted}, topicsProcessed=${result.products.topicsProcessed}, totalInserted=${result.products.totalInserted}, totalUpdated=${result.products.totalUpdated}`
       );
     } catch (error) {
-      logger.error('[ProductHunt Weekly Refresh] failed', error);
+      logger.error('[ProductHunt Daily Refresh] failed', error);
     }
   };
 
-  const waitMs = getMsUntilNextUtcWeeklyRun(
-    WEEKLY_REFRESH_DAY_UTC,
-    WEEKLY_REFRESH_HOUR_UTC,
-    WEEKLY_REFRESH_MINUTE_UTC
-  );
+  const waitMs = getMsUntilNextUtcRun(WEEKLY_REFRESH_HOUR_UTC, WEEKLY_REFRESH_MINUTE_UTC);
 
   weeklyRefreshStartTimeout = setTimeout(() => {
     runRefresh();
-    weeklyRefreshInterval = setInterval(runRefresh, 7 * 24 * 60 * 60 * 1000);
+    weeklyRefreshInterval = setInterval(runRefresh, 24 * 60 * 60 * 1000);
   }, waitMs);
 }
 

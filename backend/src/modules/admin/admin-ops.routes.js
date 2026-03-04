@@ -20,11 +20,15 @@ const { runNewsIngestion } = require('../news/news.service');
 const { fetchGithubAITrending } = require('../automation/github/github.service');
 const { fetchRSSFeeds } = require('../automation/rss/rss.service');
 const { fetchAirdropsExternal } = require('../airdrops/external/airdropScraper.service');
+const { runAgentsSyncCycle } = require('../agents/agent.service');
 const {
   fetchProductHuntTopics,
+  fetchProductsByTopic,
   fetchAllTopicsProducts,
   syncTopProductsSnapshot,
   syncTrendingProductsDaily,
+  refreshAllTopicProductsWeekly,
+  cleanupLowVoteProducts,
 } = require('../automation/producthunt/producthunt.service');
 
 const router = express.Router();
@@ -168,6 +172,15 @@ router.post(
 );
 
 router.post(
+  '/admin/ops/agents/sync',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const data = await runAgentsSyncCycle({ trigger: 'admin_ops' });
+    res.status(200).json({ success: true, message: 'Agents sync complete', data });
+  })
+);
+
+router.post(
   '/admin/ops/github/sync',
   requireAdminAccess,
   asyncHandler(async (req, res) => {
@@ -214,6 +227,16 @@ router.post(
 );
 
 router.post(
+  '/admin/ops/producthunt/products-topic-sync',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const topic = String(req.body?.topic || 'artificial-intelligence').trim();
+    const data = await fetchProductsByTopic(topic);
+    res.status(200).json({ success: true, message: 'Product Hunt topic products sync complete', data });
+  })
+);
+
+router.post(
   '/admin/ops/producthunt/top-sync',
   requireAdminAccess,
   asyncHandler(async (req, res) => {
@@ -230,6 +253,25 @@ router.post(
   asyncHandler(async (req, res) => {
     const data = await syncTrendingProductsDaily();
     res.status(200).json({ success: true, message: 'Product Hunt trending sync complete', data });
+  })
+);
+
+router.post(
+  '/admin/ops/producthunt/products-refresh',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const data = await refreshAllTopicProductsWeekly();
+    res.status(200).json({ success: true, message: 'Product Hunt products refresh complete', data });
+  })
+);
+
+router.post(
+  '/admin/ops/producthunt/products-cleanup',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const count = Number.isFinite(Number(req.body?.count)) ? Number(req.body.count) : 40;
+    const data = await cleanupLowVoteProducts(count);
+    res.status(200).json({ success: true, message: 'Product Hunt products cleanup complete', data });
   })
 );
 

@@ -4,10 +4,24 @@ const CryptoCoin = require('./crypto.model');
 const logger = require('../../config/logger');
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
-const CRYPTO_CRON_EXPRESSION = '*/10 * * * *';
+const CRYPTO_CRON_EXPRESSION = '*/30 * * * *';
 
 let cryptoCronTask = null;
 let cryptoSyncRunning = false;
+let cryptoRateLimitUntil = 0;
+
+function getRetryAfterMs(error) {
+  const headerValue = error?.response?.headers?.['retry-after'];
+  const seconds = Number(headerValue);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return seconds * 1000;
+  }
+  return 5 * 60 * 1000;
+}
+
+function isRateLimitError(error) {
+  return Number(error?.response?.status) === 429;
+}
 
 function normalizeCoin(coin) {
   return {
@@ -25,16 +39,27 @@ function normalizeCoin(coin) {
 }
 
 async function fetchTopCoins() {
-  const response = await axios.get(`${COINGECKO_BASE_URL}/coins/markets`, {
-    params: {
-      vs_currency: 'usd',
-      order: 'market_cap_desc',
-      per_page: 50,
-      page: 1,
-      sparkline: false,
-    },
-    timeout: 20000,
-  });
+  let response;
+  try {
+    response = await axios.get(`${COINGECKO_BASE_URL}/coins/markets`, {
+      params: {
+        vs_currency: 'usd',
+        order: 'market_cap_desc',
+        per_page: 50,
+        page: 1,
+        sparkline: false,
+      },
+      timeout: 20000,
+    });
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      const retryAfterMs = getRetryAfterMs(error);
+      cryptoRateLimitUntil = Date.now() + retryAfterMs;
+      const retryAfterSec = Math.ceil(retryAfterMs / 1000);
+      logger.warn(`[Crypto Cron] rate limited by CoinGecko (429). Retrying after ~${retryAfterSec}s.`);
+    }
+    throw error;
+  }
 
   const rows = Array.isArray(response.data) ? response.data : [];
   const normalized = rows.map(normalizeCoin).filter((coin) => coin.coinId);
@@ -112,13 +137,18 @@ function startCryptoCron() {
 
   const run = async () => {
     if (cryptoSyncRunning) return;
+    if (Date.now() < cryptoRateLimitUntil) {
+      return;
+    }
     cryptoSyncRunning = true;
 
     try {
       const result = await fetchTopCoins();
       logger.info(`[Crypto Cron] fetched=${result.fetched}, upserted=${result.upserted}`);
     } catch (error) {
-      logger.error('[Crypto Cron] failed', error);
+      if (!isRateLimitError(error)) {
+        logger.error('[Crypto Cron] failed', error);
+      }
     } finally {
       cryptoSyncRunning = false;
     }

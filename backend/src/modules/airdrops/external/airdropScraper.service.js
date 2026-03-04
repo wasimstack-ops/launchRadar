@@ -21,7 +21,7 @@ function resolveUrl(value) {
   if (!raw) return '';
   try {
     return new URL(raw, AIRDROPS_URL).toString();
-  } catch (error) {
+  } catch {
     return '';
   }
 }
@@ -29,7 +29,6 @@ function resolveUrl(value) {
 function parseSrcset(value) {
   const raw = normalizeText(value);
   if (!raw) return [];
-
   return raw
     .split(',')
     .map((chunk) => normalizeText(chunk).split(' ')[0])
@@ -37,8 +36,7 @@ function parseSrcset(value) {
 }
 
 function isInlinePlaceholder(value) {
-  const normalized = normalizeText(value).toLowerCase();
-  return normalized.startsWith('data:image');
+  return normalizeText(value).toLowerCase().startsWith('data:image');
 }
 
 function extractLogoUrl($, root) {
@@ -58,9 +56,7 @@ function extractLogoUrl($, root) {
     ...parseSrcset(image.attr('srcset')),
   ];
 
-  const allCandidates = [...srcsetCandidates, ...directCandidates].filter(Boolean);
-
-  for (const candidate of allCandidates) {
+  for (const candidate of [...srcsetCandidates, ...directCandidates].filter(Boolean)) {
     if (isInlinePlaceholder(candidate)) continue;
     const resolved = resolveUrl(candidate);
     if (resolved) return resolved;
@@ -84,7 +80,6 @@ function pickStatus(texts) {
 
 function collectStatusSignals($, root) {
   const signals = [];
-
   root.find('.label, .badge, .status, .tag, .ribbon, .chip').each((_, el) => {
     const node = $(el);
     signals.push(node.text());
@@ -92,17 +87,14 @@ function collectStatusSignals($, root) {
     signals.push(node.attr('data-status'));
     signals.push(node.attr('title'));
   });
-
-  // Fallback to card-level hints when status badges are not explicit.
   signals.push(root.attr('class'));
   signals.push(root.attr('data-status'));
-  signals.push(root.text());
-
   return signals.filter(Boolean);
 }
 
 function extractCard($, element, selectorUsed) {
   const root = $(element);
+
   const title =
     normalizeText(
       root.find('h1, h2, h3, h4, .card-title, .entry-title, .title').first().text() ||
@@ -113,10 +105,16 @@ function extractCard($, element, selectorUsed) {
     root.find('p, .description, .excerpt, .summary, .card-text').first().text() || ''
   );
 
-  const href =
-    root.find('a[href*="/airdrop/"]').first().attr('href') || root.find('a').first().attr('href') || '';
-  const sourceUrl = resolveUrl(href);
+  // Prefer /visit/ links — these redirect directly to the project website
+  // Fall back to /airdrop/ detail pages only if no /visit/ link found
+  const visitHref =
+    root.find('a[href*="/visit/"]').first().attr('href') || '';
+  const detailHref =
+    root.find('a[href*="/airdrop/"]').first().attr('href') ||
+    root.find('a').first().attr('href') ||
+    '';
 
+  const sourceUrl = resolveUrl(visitHref || detailHref);
   const logo = extractLogoUrl($, root);
 
   const statusSignals = collectStatusSignals($, root);
@@ -134,6 +132,7 @@ function extractCard($, element, selectorUsed) {
     importedAt: new Date(),
     rawData: {
       selectorUsed,
+      hasVisitLink: Boolean(visitHref),
       statusSignals: statusSignals.slice(0, 10),
     },
   };
@@ -150,15 +149,14 @@ function parseAirdropsHtml(html) {
       'article',
     ];
 
-    const selectorAttempts = [];
     const extracted = [];
     const seenUrls = new Set();
     let selectorUsed = '';
+    const selectorAttempts = [];
 
     for (const selector of selectors) {
       const nodes = $(selector);
       selectorAttempts.push({ selector, found: nodes.length });
-
       if (nodes.length === 0) continue;
 
       const batch = [];
@@ -177,11 +175,12 @@ function parseAirdropsHtml(html) {
     }
 
     if (extracted.length === 0) {
-      logger.error('[Airdrops External] card selectors returned 0 parsed items', { selectorAttempts });
+      logger.warn('[Airdrops External] card selectors returned 0 items — trying /visit/ link fallback', {
+        selectorAttempts,
+      });
 
-      // Fallback: derive from direct airdrop links if DOM changes.
-      const links = $('a[href*="/airdrop/"]');
-      links.each((_, element) => {
+      // Fallback: grab all /visit/ links directly (these go to project websites)
+      $('a[href*="/visit/"]').each((_, element) => {
         const href = $(element).attr('href');
         const sourceUrl = resolveUrl(href);
         if (!sourceUrl || seenUrls.has(sourceUrl)) return;
@@ -198,49 +197,22 @@ function parseAirdropsHtml(html) {
           status: '',
           source: AIRDROPS_SOURCE,
           importedAt: new Date(),
-          rawData: {
-            selectorUsed: 'a[href*="/airdrop/"] fallback',
-          },
+          rawData: { selectorUsed: '/visit/ fallback', hasVisitLink: true },
         });
       });
     }
 
-    return {
-      listings: extracted,
+    logger.info('[Airdrops External] parsed', {
+      total: extracted.length,
       selectorUsed: selectorUsed || 'fallback',
-      selectorAttempts,
-    };
+      withVisitLinks: extracted.filter((e) => e.rawData?.hasVisitLink).length,
+    });
+
+    return { listings: extracted, selectorUsed: selectorUsed || 'fallback', selectorAttempts };
   } catch (error) {
     logger.error('[Airdrops External] parse failed', error);
     throw error;
   }
-}
-
-async function getLatestFetchLog() {
-  return FetchLog.findOne({ jobName: SCRAPE_JOB_NAME, source: AIRDROPS_SOURCE }).sort({ startedAt: -1 }).lean();
-}
-
-async function logFetch(payload) {
-  try {
-    await FetchLog.create(payload);
-  } catch (error) {
-    logger.error('[Airdrops External] failed to persist fetch log', error);
-  }
-}
-
-function createNetworkFailureError(attemptErrors) {
-  const normalized = attemptErrors.map((item) => ({
-    url: item.url,
-    code: String(item?.error?.code || item?.error?.cause?.code || 'UNKNOWN'),
-    message: String(item?.error?.message || 'Request failed'),
-  }));
-
-  const codes = Array.from(new Set(normalized.map((item) => item.code))).join(', ');
-  const message = `Airdrops source unreachable (codes: ${codes || 'UNKNOWN'}). Check DNS/network/firewall and retry.`;
-  const error = new Error(message);
-  error.statusCode = 503;
-  error.meta = { attempts: normalized };
-  return error;
 }
 
 async function fetchAirdropsHtml() {
@@ -263,13 +235,30 @@ async function fetchAirdropsHtml() {
     } catch (error) {
       attemptErrors.push({ url, error });
       logger.error(`[Airdrops External] request failed for ${url}`, {
-        code: error?.code || error?.cause?.code || 'UNKNOWN',
-        message: error?.message || 'Request failed',
+        code: error?.code || 'UNKNOWN',
+        message: error?.message,
       });
     }
   }
 
-  throw createNetworkFailureError(attemptErrors);
+  const codes = attemptErrors.map((e) => e?.error?.code || 'UNKNOWN').join(', ');
+  const err = new Error(`Airdrops source unreachable (${codes}). Check network and retry.`);
+  err.statusCode = 503;
+  throw err;
+}
+
+async function getLatestFetchLog() {
+  return FetchLog.findOne({ jobName: SCRAPE_JOB_NAME, source: AIRDROPS_SOURCE })
+    .sort({ startedAt: -1 })
+    .lean();
+}
+
+async function logFetch(payload) {
+  try {
+    await FetchLog.create(payload);
+  } catch (error) {
+    logger.error('[Airdrops External] failed to persist fetch log', error);
+  }
 }
 
 async function fetchAirdropsExternal(options = {}) {
@@ -282,9 +271,7 @@ async function fetchAirdropsExternal(options = {}) {
   if (!force && !isFirstSeed && latestFetch?.startedAt) {
     const elapsedMs = Date.now() - new Date(latestFetch.startedAt).getTime();
     if (elapsedMs < MIN_SCRAPE_INTERVAL_MS) {
-      const remainingMs = MIN_SCRAPE_INTERVAL_MS - elapsedMs;
-      const nextAllowedAt = new Date(Date.now() + remainingMs);
-
+      const nextAllowedAt = new Date(Date.now() + MIN_SCRAPE_INTERVAL_MS - elapsedMs);
       await logFetch({
         jobName: SCRAPE_JOB_NAME,
         source: AIRDROPS_SOURCE,
@@ -296,16 +283,11 @@ async function fetchAirdropsExternal(options = {}) {
         matched: 0,
         inserted: 0,
         skipped: 1,
-        meta: {
-          reason: 'cooldown',
-          nextAllowedAt: nextAllowedAt.toISOString(),
-          existingCount,
-        },
+        meta: { reason: 'cooldown', nextAllowedAt: nextAllowedAt.toISOString(), existingCount },
       });
-
       return {
         skipped: true,
-        reason: 'Cooldown active. Airdrops scraper runs max once per 6 hours.',
+        reason: 'Cooldown active. Runs max once per 6 hours.',
         nextAllowedAt: nextAllowedAt.toISOString(),
         fetched: 0,
         inserted: 0,
@@ -329,27 +311,18 @@ async function fetchAirdropsExternal(options = {}) {
         matched: 0,
         inserted: 0,
         skipped: 1,
-        meta: {
-          selectorUsed,
-          selectorAttempts,
-          warning: 'No listings parsed. Check selector strategy.',
-        },
+        meta: { selectorUsed, selectorAttempts, warning: 'No listings parsed.' },
       });
-
-      return {
-        fetched: 0,
-        inserted: 0,
-        selectorUsed,
-        selectorAttempts,
-        warning: 'No listings parsed. Selectors may have changed.',
-      };
+      return { fetched: 0, inserted: 0, selectorUsed, warning: 'No listings parsed. Selectors may have changed.' };
     }
 
-    // Generate AI summaries only for items not yet in the DB (new inserts).
+    // Generate AI summaries only for new items
     const existingUrls = new Set(
-      (await AirdropExternalSource.find({ sourceUrl: { $in: listings.map((l) => l.sourceUrl) } })
-        .select('sourceUrl')
-        .lean()).map((doc) => doc.sourceUrl)
+      (
+        await AirdropExternalSource.find({ sourceUrl: { $in: listings.map((l) => l.sourceUrl) } })
+          .select('sourceUrl')
+          .lean()
+      ).map((doc) => doc.sourceUrl)
     );
 
     for (const item of listings) {
@@ -370,7 +343,6 @@ async function fetchAirdropsExternal(options = {}) {
           upsert: true,
         },
       };
-      // Only set aiSummary on first insert — preserves any manual edits on subsequent scrapes.
       if (aiSummary !== undefined) {
         op.updateOne.update.$setOnInsert = { aiSummary: aiSummary || '' };
       }
@@ -379,14 +351,11 @@ async function fetchAirdropsExternal(options = {}) {
 
     const bulkResult = await AirdropExternalSource.bulkWrite(operations, { ordered: false });
     const inserted = Number(bulkResult?.upsertedCount || 0);
-    const statusSummary = listings.reduce(
-      (acc, item) => {
-        const key = item.status || 'unlabeled';
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      },
-      {}
-    );
+    const statusSummary = listings.reduce((acc, item) => {
+      const key = item.status || 'unlabeled';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
 
     await logFetch({
       jobName: SCRAPE_JOB_NAME,
@@ -399,11 +368,7 @@ async function fetchAirdropsExternal(options = {}) {
       matched: listings.length,
       inserted,
       skipped: 0,
-      meta: {
-        selectorUsed,
-        force,
-        isFirstSeed,
-      },
+      meta: { selectorUsed, force, isFirstSeed, statusSummary },
     });
 
     return {
@@ -427,10 +392,9 @@ async function fetchAirdropsExternal(options = {}) {
       matched: 0,
       inserted: 0,
       skipped: 0,
-      errorMessage: String(error?.message || 'Airdrops scrape failed'),
+      errorMessage: String(error?.message || 'Scrape failed'),
       meta: error?.meta || {},
     });
-
     logger.error('[Airdrops External] scrape failed', error);
     throw error;
   }
@@ -452,7 +416,7 @@ async function getPublicAirdrops() {
       description: item.description || '',
       aiSummary: item.aiSummary || '',
       logo: item.logo || '',
-      actionText: 'Open Airdrop',
+      actionText: 'Join Airdrop',
       actionUrl: item.sourceUrl || '',
       sourceUrl: item.sourceUrl || '',
       status,
