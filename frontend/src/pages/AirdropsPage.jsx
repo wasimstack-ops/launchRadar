@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import api from '../api/client';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -64,7 +65,6 @@ function AirdropsPage() {
     };
   }, []);
 
-  const hot = useMemo(() => airdrops.filter((item) => item.status === 'hot'), [airdrops]);
   const confirmed = useMemo(() => airdrops.filter((item) => item.status === 'confirmed'), [airdrops]);
   const latest = useMemo(() => airdrops.filter((item) => !item.status), [airdrops]);
 
@@ -98,21 +98,17 @@ function AirdropsPage() {
                     <h3 className={styles.rowTitle}>{item?.title || 'Untitled Airdrop'}</h3>
                     {statusBadge ? <span className={styles.rowBadge}>{statusBadge}</span> : null}
                   </div>
-
-                  <p className={styles.rowSummary}>
-                    {item?.aiSummary || item?.description || 'No summary available.'}
-                  </p>
                 </div>
 
                 <div className={styles.actionCol}>
                   {sourceUrl ? (
                     <a className={styles.viewButton} href={sourceUrl} target="_blank" rel="noreferrer noopener">
-                      View Details
+                      {item?.actionText || 'Join Airdrop'}
                       <ExternalLink size={14} />
                     </a>
                   ) : (
                     <button type="button" className={styles.viewButton} disabled>
-                      View Details
+                      {item?.actionText || 'Join Airdrop'}
                       <ExternalLink size={14} />
                     </button>
                   )}
@@ -127,6 +123,18 @@ function AirdropsPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Crypto Airdrops — Free Token Campaigns | LaunchRadar</title>
+        <meta name="description" content="Discover active and confirmed crypto airdrop campaigns. Find free token opportunities grouped by priority and status." />
+        <meta property="og:title" content="Crypto Airdrops — Free Token Campaigns | LaunchRadar" />
+        <meta property="og:description" content="Discover active and confirmed crypto airdrop campaigns. Find free token opportunities on LaunchRadar." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchradar.io/airdrops" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Crypto Airdrops | LaunchRadar" />
+        <meta name="twitter:description" content="Active crypto airdrop campaigns — confirmed and latest opportunities." />
+      </Helmet>
+
       <Navbar />
 
       <main className={styles.page}>
@@ -142,7 +150,6 @@ function AirdropsPage() {
             <p className={styles.empty}>Loading airdrops...</p>
           ) : (
             <>
-              {renderSection('HOT AIRDROPS', hot)}
               {renderSection('CONFIRMED AIRDROPS', confirmed)}
               {renderSection('LATEST AIRDROPS', latest)}
             </>

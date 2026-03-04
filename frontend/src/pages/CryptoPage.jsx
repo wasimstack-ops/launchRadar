@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import api from '../api/client';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -141,6 +142,18 @@ function CryptoPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Crypto Markets — Live Prices &amp; Data | LaunchRadar</title>
+        <meta name="description" content="Track live cryptocurrency prices, market cap, and trends. Real-time crypto market data powered by CoinGecko." />
+        <meta property="og:title" content="Crypto Markets — Live Prices & Data | LaunchRadar" />
+        <meta property="og:description" content="Track live cryptocurrency prices, market cap, and trends. Real-time data powered by CoinGecko." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchradar.io/crypto" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Crypto Markets — Live Prices | LaunchRadar" />
+        <meta name="twitter:description" content="Live crypto prices and market data on LaunchRadar." />
+      </Helmet>
+
       <Navbar />
 
       <main className="container crypto-shell">

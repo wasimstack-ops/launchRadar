@@ -34,6 +34,15 @@ const JOBS = [
     legacyEndpoint: '/api/admin/automation/producthunt-products-all-topics-test',
   },
   {
+    key: 'phProductsTopic',
+    label: 'Sync PH One Topic (AI)',
+    method: 'post',
+    endpoint: '/api/admin/ops/producthunt/products-topic-sync',
+    payload: { topic: 'artificial-intelligence' },
+    legacyMethod: 'get',
+    legacyEndpoint: '/api/admin/automation/producthunt-products-by-topic-test?topic=artificial-intelligence',
+  },
+  {
     key: 'phTop',
     label: 'Sync PH Top Snapshot',
     method: 'post',
@@ -50,12 +59,36 @@ const JOBS = [
     legacyEndpoint: '/api/admin/automation/producthunt-trending-sync',
   },
   {
+    key: 'phRefresh',
+    label: 'Refresh PH Products',
+    method: 'post',
+    endpoint: '/api/admin/ops/producthunt/products-refresh',
+    legacyMethod: 'get',
+    legacyEndpoint: '/api/admin/automation/producthunt-products-weekly-refresh',
+  },
+  {
+    key: 'phCleanup',
+    label: 'Cleanup PH Low Votes',
+    method: 'post',
+    endpoint: '/api/admin/ops/producthunt/products-cleanup',
+    legacyMethod: 'get',
+    legacyEndpoint: '/api/admin/automation/producthunt-products-weekly-cleanup?count=40',
+  },
+  {
     key: 'github',
     label: 'Sync GitHub AI',
     method: 'post',
     endpoint: '/api/admin/ops/github/sync',
     legacyMethod: 'get',
     legacyEndpoint: '/api/admin/automation/github-test',
+  },
+  {
+    key: 'agents',
+    label: 'Sync Agents',
+    method: 'post',
+    endpoint: '/api/admin/ops/agents/sync',
+    legacyMethod: 'post',
+    legacyEndpoint: '/api/admin/agents/fetch',
   },
   {
     key: 'rss',
@@ -295,14 +328,14 @@ function AdminOperationsPanel({ refreshSignal = 0 }) {
       let response;
 
       try {
-        response = await runApiCall(job.method, job.endpoint, {});
+        response = await runApiCall(job.method, job.endpoint, job.payload || {});
       } catch (primaryError) {
         if (primaryError?.response?.status === 404 && job.legacyEndpoint) {
           setCompatibilityMode(true);
           setNotice(
             'Using compatibility mode. Restart backend to enable the new /api/admin/ops routes and full metrics.'
           );
-          response = await runApiCall(job.legacyMethod || 'get', job.legacyEndpoint, {});
+          response = await runApiCall(job.legacyMethod || 'get', job.legacyEndpoint, job.payload || {});
         } else {
           throw primaryError;
         }
@@ -400,8 +433,20 @@ function AdminOperationsPanel({ refreshSignal = 0 }) {
         {statCards.map(([title, value]) => statCard(title, value))}
       </div>
 
-      <div style={{ marginBottom: 16 }}>
-        <h3 style={{ margin: '0 0 10px', fontWeight: 800, color: '#0f172a' }}>Manual Sync Jobs</h3>
+      <div
+        style={{
+          marginBottom: 16,
+          border: '1px solid #cbd5e1',
+          borderRadius: 12,
+          background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+          padding: 14,
+          boxShadow: '0 6px 18px rgba(15, 23, 42, 0.06)',
+        }}
+      >
+        <h3 style={{ margin: '0 0 4px', fontWeight: 900, color: '#0f172a', fontSize: 18 }}>Manual Sync Jobs</h3>
+        <p style={{ margin: '0 0 12px', color: '#475569', fontSize: 13 }}>
+          Run data ingestion jobs on demand. Use this when you need immediate refresh outside cron.
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
           {JOBS.map((job) => {
             const isRunning = Boolean(running[job.key]);
@@ -411,19 +456,34 @@ function AdminOperationsPanel({ refreshSignal = 0 }) {
             return (
               <div
                 key={job.key}
-                style={{ border: '1px solid #d1d5db', borderRadius: 10, padding: 12, background: '#fff' }}
+                style={{
+                  border: '1px solid #d1d5db',
+                  borderRadius: 10,
+                  padding: 12,
+                  background: '#fff',
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)',
+                }}
               >
                 <p style={{ margin: '0 0 8px', fontWeight: 800, color: '#0f172a' }}>{job.label}</p>
                 <button
                   type="button"
                   disabled={isRunning || disabledInCompatibility}
                   onClick={() => onRunJob(job)}
-                  style={{ fontWeight: 800, color: '#0f172a' }}
+                  style={{
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    background: disabledInCompatibility ? '#94a3b8' : isRunning ? '#0f766e' : '#0ea5a4',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    minWidth: 92,
+                    cursor: isRunning || disabledInCompatibility ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {disabledInCompatibility ? 'Unavailable' : isRunning ? 'Running...' : 'Run'}
                 </button>
                 {output ? (
-                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: '#334155', lineHeight: 1.5 }}>
                     {formatDate(output.at)} | {output.summary}
                   </p>
                 ) : null}

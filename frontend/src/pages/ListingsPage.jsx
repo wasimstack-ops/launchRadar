@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -91,11 +92,29 @@ function getSourceColors(url) {
 function NewsletterCTA() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setSent(true);
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!normalizedEmail) return;
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      await api.post('/api/alerts/subscribe', {
+        email: normalizedEmail,
+        frequency: 'weekly',
+      });
+      setSent(true);
+      setEmail('');
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || 'Failed to subscribe. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -120,13 +139,15 @@ function NewsletterCTA() {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={submitting}
               required
             />
-            <button type="submit" className="newsletter-btn">
-              Subscribe <ArrowRight size={15} />
+            <button type="submit" className="newsletter-btn" disabled={submitting}>
+              {submitting ? 'Subscribing...' : <>Subscribe <ArrowRight size={15} /></>}
             </button>
           </form>
         )}
+        {error && <p className="form-error" style={{ marginTop: 10 }}>{error}</p>}
       </div>
     </section>
   );
@@ -245,6 +266,18 @@ function ListingsPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>LaunchRadar — Discover the Hottest AI Tools &amp; Startups</title>
+        <meta name="description" content="Real-time discovery of the hottest AI tools, products, and startups from Product Hunt and beyond. Track every AI launch as it happens." />
+        <meta property="og:title" content="LaunchRadar — Discover the Hottest AI Tools & Startups" />
+        <meta property="og:description" content="Real-time discovery of the hottest AI tools, products, and startups from Product Hunt and beyond." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchradar.io/" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="LaunchRadar — Discover the Hottest AI Tools & Startups" />
+        <meta name="twitter:description" content="Track every AI launch in real-time. Trending tools, crypto, agents, and airdrops." />
+      </Helmet>
+
       <Navbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       {/* ---- HERO ---- */}

@@ -4,6 +4,7 @@ import ListingsTable from '../components/listings/ListingsTable';
 import PendingSubmissionsTable from '../components/listings/PendingSubmissionsTable';
 import AdminOperationsPanel from '../components/admin/AdminOperationsPanel';
 import AdminCryptoTable from '../components/admin/AdminCryptoTable';
+import AdminSubscribersTable from '../components/admin/AdminSubscribersTable';
 
 function AdminDashboardPage() {
   const [editingListing, setEditingListing] = useState(null);
@@ -62,6 +63,13 @@ function AdminDashboardPage() {
         >
           Crypto
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection('subscribers')}
+          style={{ background: activeSection === 'subscribers' ? '#0f766e' : '#6b7280' }}
+        >
+          Subscribers
+        </button>
       </div>
 
       {activeSection === 'create' ? (
@@ -102,6 +110,13 @@ function AdminDashboardPage() {
       {activeSection === 'operations' ? <AdminOperationsPanel refreshSignal={refreshSignal} /> : null}
 
       {activeSection === 'crypto' ? <AdminCryptoTable /> : null}
+
+      {activeSection === 'subscribers' ? (
+        <>
+          <h2 style={{ marginBottom: 12 }}>Newsletter Subscribers</h2>
+          <AdminSubscribersTable />
+        </>
+      ) : null}
     </main>
   );
 }

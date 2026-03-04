@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle, Rocket } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import api from '../api/client';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -63,6 +64,18 @@ function SubmitListingPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Submit Your Product — Get Discovered | LaunchRadar</title>
+        <meta name="description" content="Submit your AI tool, startup, or product to LaunchRadar. Get discovered by thousands of early adopters and tech enthusiasts." />
+        <meta property="og:title" content="Submit Your Product — Get Discovered | LaunchRadar" />
+        <meta property="og:description" content="Submit your AI tool or startup to LaunchRadar and get discovered by thousands of early adopters." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://launchradar.io/submit" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Submit Your Product | LaunchRadar" />
+        <meta name="twitter:description" content="Get your AI tool or startup discovered on LaunchRadar." />
+      </Helmet>
+
       <Navbar />
 
       <div className="submit-shell">
