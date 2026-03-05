@@ -1,5 +1,8 @@
 {
   "name": "launchradar-workspace",
   "private": true,
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node backend/src/server.js"
+  }
 }
