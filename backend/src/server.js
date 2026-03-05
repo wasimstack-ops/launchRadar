@@ -25,6 +25,7 @@ let isShuttingDown = false;
 // when upstream domains return AAAA records first.
 try {
   dns.setDefaultResultOrder('ipv4first');
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
 } catch (error) {
   logger.error('Failed to set DNS result order', error);
 }
