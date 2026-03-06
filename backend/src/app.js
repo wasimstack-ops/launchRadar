@@ -11,6 +11,9 @@ const apiRoutes = require('./routes');
 
 const app = express();
 
+// Trust the first proxy (required when running behind Koyeb/Railway/etc.)
+app.set('trust proxy', 1);
+
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(helmet());
 
