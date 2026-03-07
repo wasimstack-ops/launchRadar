@@ -352,7 +352,7 @@ function ListingsPage() {
             What are you building?
           </h1>
           <p className="hero-sub">
-            Build smarter, not blindly.
+            Get VC/Investor level scoring on your business idea and get featured and funded if you rank in the Top 5 leaderboard on wayb.
           </p>
           <div className="hero-idea-box" aria-label="Example startup ideas">
             <div className="hero-idea-header">
