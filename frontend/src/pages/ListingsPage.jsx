@@ -259,16 +259,22 @@ function ListingsPage() {
     setLoadingTopics(true);
     setTopicsError('');
     const fetchTopics = async () => {
+      let categoryError = null;
       try {
         let data = [];
         try {
           const r = await api.get('/api/producthunt/categories');
           data = Array.isArray(r.data?.data) ? r.data.data : [];
-        } catch {
+        } catch (error) {
+          categoryError = error;
           const r2 = await api.get('/api/producthunt/topics');
           data = Array.isArray(r2.data?.data) ? r2.data.data : [];
         }
         setTopics(normalizeTopics(data));
+        setTopicsError('');
+        if (categoryError && data.length === 0) {
+          setTopicsError(getFriendlyRequestMessage(categoryError, 'Failed to load categories.'));
+        }
       } catch (err) {
         setTopicsError(getFriendlyRequestMessage(err, 'Failed to load categories.'));
       } finally {
@@ -503,7 +509,7 @@ function ListingsPage() {
       {/* ---- CATEGORY CHIPS ---- */}
       <section className="category-section">
         <div className="category-inner">
-          {topicsError && <p className="form-error" style={{ marginBottom: 12 }}>{topicsError}</p>}
+          {topicsError && topics.length === 0 && <p className="form-error" style={{ marginBottom: 12 }}>{topicsError}</p>}
           <div className="category-chips">
             {loadingTopics && (
               <>
@@ -615,7 +621,7 @@ function ListingsPage() {
               </>
             )}
 
-            {!loadingTrending && trendingError && (
+            {!loadingTrending && trendingError && trendingItems.length === 0 && (
               <div className="empty-state" style={{ padding: '24px' }}>
                 <p>{trendingError}</p>
               </div>
@@ -637,7 +643,7 @@ function ListingsPage() {
               </h2>
             </div>
 
-            {topTodayError && <p className="form-error" style={{ marginBottom: 12 }}>{topTodayError}</p>}
+            {topTodayError && topToday.length === 0 && <p className="form-error" style={{ marginBottom: 12 }}>{topTodayError}</p>}
 
             {loadingTopToday && (
               <div className="product-list">

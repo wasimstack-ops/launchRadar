@@ -12,6 +12,9 @@ import SubmitListingPage from '../pages/SubmitListingPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
 import IdeaReportPage from '../pages/IdeaReportPage';
 import LeaderboardPage from '../pages/LeaderboardPage';
+import CommunityPage from '../pages/CommunityPage';
+import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
+import TermsOfServicePage from '../pages/TermsOfServicePage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
 function AppRoutes() {
@@ -22,6 +25,9 @@ function AppRoutes() {
         <Route path="/crypto" element={<CryptoPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/airdrops" element={<AirdropsPage />} />
+        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         <Route path="/category/:slug" element={<CategoryProductsPage />} />
         <Route path="/listing/:id" element={<ListingFormPage />} />
 
