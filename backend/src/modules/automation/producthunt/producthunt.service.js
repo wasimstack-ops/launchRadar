@@ -16,6 +16,7 @@ const WEEKLY_REFRESH_HOUR_UTC = 0;
 const WEEKLY_REFRESH_MINUTE_UTC = 5;
 const TRENDING_SYNC_HOUR_UTC = 0;
 const TRENDING_SYNC_MINUTE_UTC = 25;
+const TRENDING_REPAIR_COOLDOWN_MS = 15 * 60 * 1000;
 
 let dailySyncStartTimeout = null;
 let dailySyncInterval = null;
@@ -26,6 +27,7 @@ let weeklyRefreshInterval = null;
 let trendingSyncStartTimeout = null;
 let trendingSyncInterval = null;
 let trendingSyncInFlight = null;
+let lastTrendingRepairAttemptAt = 0;
 
 const PRODUCTHUNT_POSTS_QUERY = `
 query LaunchRadarProductHuntPosts {
@@ -709,7 +711,14 @@ async function ensureTrendingProductsAvailable(limit = 10) {
     .lean();
 
   const hasMissingThumbnails = cached.length > 0 && cached.some((item) => !String(item?.thumbnail || '').trim());
-  if (cached.length > 0 && !hasMissingThumbnails) return cached;
+  const shouldRepairMissingThumbnails =
+    hasMissingThumbnails && Date.now() - lastTrendingRepairAttemptAt >= TRENDING_REPAIR_COOLDOWN_MS;
+
+  if (cached.length > 0 && !shouldRepairMissingThumbnails) return cached;
+
+  if (shouldRepairMissingThumbnails) {
+    lastTrendingRepairAttemptAt = Date.now();
+  }
 
   if (!trendingSyncInFlight) {
     trendingSyncInFlight = syncTrendingProductsDaily()
