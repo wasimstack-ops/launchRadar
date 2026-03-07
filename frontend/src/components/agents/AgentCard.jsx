@@ -15,7 +15,7 @@ function getInitials(title) {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-function AgentCard({ item }) {
+function AgentCard({ item, linkLabel = 'View on GitHub' }) {
   const [imgError, setImgError] = useState(false);
   const hasLogo = item.logoUrl && !imgError;
   const tags = Array.isArray(item.tags) ? item.tags.slice(0, 3) : [];
@@ -78,12 +78,12 @@ function AgentCard({ item }) {
             rel="noreferrer noopener"
             className={styles.viewBtn}
           >
-            View on GitHub
+            {linkLabel}
             <ExternalLink size={12} />
           </a>
         ) : (
           <button type="button" className={styles.viewBtn} disabled>
-            View on GitHub
+            {linkLabel}
           </button>
         )}
         {item.website ? (
