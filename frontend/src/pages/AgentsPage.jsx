@@ -90,7 +90,7 @@ function AgentSection({ endpoint, label }) {
         </div>
       ) : items.length === 0 ? (
         <p className={styles.emptyState}>
-          No data yet — run a sync from the admin panel to populate this section.
+          No data yet â€” run a sync from the admin panel to populate this section.
         </p>
       ) : (
         <div className={styles.grid}>
@@ -134,14 +134,14 @@ function AgentsPage() {
   return (
     <div>
       <Helmet>
-        <title>AI Agents &amp; Repositories — Trending Tools | LaunchRadar</title>
+        <title>AI Agents &amp; Repositories - Trending Tools | wayb</title>
         <meta name="description" content="Discover trending AI agent frameworks, autonomous agents, and open-source repositories. Synced daily from Hugging Face and GitHub." />
-        <meta property="og:title" content="AI Agents & Repositories — Trending Tools | LaunchRadar" />
+        <meta property="og:title" content="AI Agents & Repositories - Trending Tools | wayb" />
         <meta property="og:description" content="Discover trending AI agent frameworks and open-source repos. Updated daily from Hugging Face and GitHub." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://launchradar.io/agents" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="AI Agents & Repos | LaunchRadar" />
+        <meta name="twitter:title" content="AI Agents & Repos | wayb" />
         <meta name="twitter:description" content="Trending AI agents and open-source repositories, synced daily." />
       </Helmet>
 
@@ -183,3 +183,4 @@ function AgentsPage() {
 }
 
 export default AgentsPage;
+

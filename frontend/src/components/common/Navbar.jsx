@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Moon, Rocket, Search, Sun, Zap } from 'lucide-react';
+import { Boxes, LogOut, Moon, Rocket, Search, Sun } from 'lucide-react';
 import api from '../../api/client';
 
 function getInitials(value) {
@@ -50,16 +50,15 @@ function Navbar({ searchTerm, onSearchChange }) {
   };
 
   const isActive = (path) => location.pathname === path;
-
   return (
     <nav className="site-nav">
       <div className="nav-inner">
         {/* Logo */}
         <Link to="/" className="nav-logo">
           <span className="nav-logo-icon">
-            <Zap size={14} />
+            <Boxes size={14} />
           </span>
-          LaunchRadar
+          wayb
         </Link>
 
         {/* Search (optional, shown when prop provided) */}

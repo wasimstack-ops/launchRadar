@@ -53,6 +53,19 @@ app.use(mongoSanitize());
 // ── HTTP parameter pollution prevention ──────────────────────────────────────
 app.use(hpp());
 
+function shouldSkipGlobalRateLimit(req) {
+  if (req.path === '/health') return true;
+
+  const publicReadPaths = new Set([
+    '/api/producthunt/topics',
+    '/api/producthunt/categories',
+    '/api/producthunt/top-today',
+    '/api/producthunt/trending',
+  ]);
+
+  return req.method === 'GET' && publicReadPaths.has(req.path);
+}
+
 // ── Global rate limit: 100 req / 15 min per IP ───────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -60,7 +73,7 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many requests, please try again later.' },
-  skip: (req) => req.path === '/health',
+  skip: shouldSkipGlobalRateLimit,
 });
 
 // ── Auth rate limit: 10 attempts / 15 min per IP ─────────────────────────────

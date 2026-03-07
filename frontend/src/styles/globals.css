@@ -566,11 +566,167 @@ body.theme-light .site-nav {
   max-width: 520px;
 }
 
+.hero-idea-box {
+  width: min(760px, 100%);
+  text-align: center;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--border-md);
+  background: var(--surface);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.hero-idea-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 16px 8px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+}
+
+.hero-idea-bulb-glow {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 102, 0.28) 0%, rgba(255, 214, 102, 0.1) 48%, transparent 74%);
+  filter: blur(10px);
+  animation: bulb-pulse 2.8s ease-in-out infinite;
+}
+
+.hero-idea-bulb-shell {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffe08a;
+  background: linear-gradient(180deg, rgba(255, 228, 148, 0.08), rgba(255, 228, 148, 0.03));
+  border: 1px solid rgba(255, 228, 148, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 0 1px rgba(255, 228, 148, 0.03);
+}
+
+.hero-idea-header-label {
+  position: relative;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+.hero-idea-display {
+  min-height: 100px;
+  padding: 24px 28px;
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.75;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-idea-text {
+  color: var(--text-2);
+}
+
+.hero-idea-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  background: var(--accent-h);
+  animation: blink-caret 1s steps(1) infinite;
+}
+
+/* Live pulse dot in badge */
+.hero-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+@keyframes bulb-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.04); }
+}
+
+/* Stats bar */
+.hero-stats {
+  display: flex;
+  align-items: center;
+  padding: 16px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--r-xl);
+  margin-top: 4px;
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 24px;
+}
+
+.hero-stat-num {
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--text), var(--text-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.hero-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hero-stat-div {
+  width: 1px;
+  height: 32px;
+  background: var(--border-md);
+  flex-shrink: 0;
+}
+
 .hero-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+@keyframes blink-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
 /* ---- 8. CATEGORY CHIPS ---- */
@@ -1949,6 +2105,7 @@ body.theme-light .site-nav {
 
   .hero { padding: 56px 0 48px; }
   .hero-title { font-size: 2.25rem; }
+  .hero-idea-display { min-height: 160px; padding: 18px; }
 
   .product-item {
     grid-template-columns: 28px 44px minmax(0, 1fr);
@@ -1995,6 +2152,8 @@ body.theme-light .site-nav {
   .hero-title { font-size: 1.9rem; }
   .hero-actions { flex-direction: column; width: 100%; }
   .hero-actions .btn { width: 100%; justify-content: center; }
+  .hero-idea-box { padding: 14px; }
+  .hero-idea-display { min-height: 176px; font-size: 0.98rem; }
 }
 
 /* ---- 25. ADMIN COMPAT (preserved for admin pages) ---- */

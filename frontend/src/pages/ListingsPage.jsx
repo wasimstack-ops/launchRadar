@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Lightbulb,
   MessageSquare,
   Newspaper,
   Rocket,
@@ -19,6 +20,22 @@ import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
 const FALLBACK_THUMB = 'https://placehold.co/64x64/141b27/6366f1?text=?';
+const HERO_IDEA_EXAMPLES = [
+  'I want to build a SaaS tool for technical hiring teams to screen candidates faster.',
+  'I want to build an AI workspace for small agencies to manage client content and reporting.',
+  'I want to build a product research platform for founders exploring new B2B software ideas.',
+];
+
+function getFriendlyRequestMessage(error, fallbackMessage) {
+  const status = Number(error?.response?.status || 0);
+  const message = String(error?.response?.data?.message || error?.message || '').trim();
+
+  if (status === 429 || /too many requests/i.test(message)) {
+    return 'Live data is temporarily busy. Please refresh in a minute.';
+  }
+
+  return fallbackMessage;
+}
 
 // ---- Helpers ----
 function normalizeTopics(input) {
@@ -38,7 +55,7 @@ function normalizeTopics(input) {
 
 function truncate(text, max) {
   const v = String(text || '').trim();
-  return v.length <= max ? v : `${v.slice(0, max).trimEnd()}…`;
+  return v.length <= max ? v : `${v.slice(0, max).trimEnd()}â€¦`;
 }
 
 function timeAgo(dateStr) {
@@ -125,11 +142,11 @@ function NewsletterCTA() {
         </p>
         <h2 className="newsletter-title">Never miss an AI launch</h2>
         <p className="newsletter-sub">
-          Get a weekly roundup of the best new AI tools, products, and startups — curated and delivered to your inbox.
+          Get a weekly roundup of the best new AI tools, products, and startups â€” curated and delivered to your inbox.
         </p>
         {sent ? (
           <p style={{ color: 'var(--green)', fontWeight: 600 }}>
-            ✓ You're on the list! We'll be in touch.
+            âœ“ You're on the list! We'll be in touch.
           </p>
         ) : (
           <form className="newsletter-form" onSubmit={handleSubmit}>
@@ -157,6 +174,9 @@ function NewsletterCTA() {
 function ListingsPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [ideaExampleIndex, setIdeaExampleIndex] = useState(0);
+  const [typedIdea, setTypedIdea] = useState('');
+  const [isDeletingIdea, setIsDeletingIdea] = useState(false);
 
   const [topics, setTopics] = useState([]);
   const [topToday, setTopToday] = useState([]);
@@ -170,14 +190,40 @@ function ListingsPage() {
   const [loadingTopToday, setLoadingTopToday] = useState(false);
   const [loadingNews, setLoadingNews] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
+  const [topicsError, setTopicsError] = useState('');
+  const [topTodayError, setTopTodayError] = useState('');
+  const [trendingError, setTrendingError] = useState('');
 
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
-  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const activeIdea = HERO_IDEA_EXAMPLES[ideaExampleIndex] || '';
+    let timeoutId;
+
+    if (!isDeletingIdea && typedIdea === activeIdea) {
+      timeoutId = setTimeout(() => setIsDeletingIdea(true), 1400);
+    } else if (isDeletingIdea && typedIdea === '') {
+      timeoutId = setTimeout(() => {
+        setIsDeletingIdea(false);
+        setIdeaExampleIndex((current) => (current + 1) % HERO_IDEA_EXAMPLES.length);
+      }, 220);
+    } else {
+      timeoutId = setTimeout(() => {
+        const nextValue = isDeletingIdea
+          ? activeIdea.slice(0, Math.max(0, typedIdea.length - 1))
+          : activeIdea.slice(0, typedIdea.length + 1);
+        setTypedIdea(nextValue);
+      }, isDeletingIdea ? 28 : 42);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [ideaExampleIndex, isDeletingIdea, typedIdea]);
 
   // Load categories/topics
   useEffect(() => {
     setLoadingTopics(true);
+    setTopicsError('');
     const fetchTopics = async () => {
       try {
         let data = [];
@@ -190,7 +236,7 @@ function ListingsPage() {
         }
         setTopics(normalizeTopics(data));
       } catch (err) {
-        setError(err?.response?.data?.message || 'Failed to load categories');
+        setTopicsError(getFriendlyRequestMessage(err, 'Failed to load categories.'));
       } finally {
         setLoadingTopics(false);
       }
@@ -210,15 +256,20 @@ function ListingsPage() {
   // Load trending
   useEffect(() => {
     setLoadingTrending(true);
+    setTrendingError('');
     api.get('/api/producthunt/trending?limit=8')
       .then((r) => setTrendingItems(Array.isArray(r.data?.data) ? r.data.data : []))
-      .catch(() => setTrendingItems([]))
+      .catch((err) => {
+        setTrendingItems([]);
+        setTrendingError(getFriendlyRequestMessage(err, 'Trending products are temporarily unavailable.'));
+      })
       .finally(() => setLoadingTrending(false));
   }, []);
 
   // Load top today
   useEffect(() => {
     setLoadingTopToday(true);
+    setTopTodayError('');
     api.get(`/api/producthunt/top-today?limit=15&page=${topPage}`)
       .then((r) => {
         const payload = r.data?.data || {};
@@ -227,7 +278,12 @@ function ListingsPage() {
         setTopTotalPages(Math.max(1, Number(payload?.totalPages || 1)));
         setTopPaginationActive(Boolean(payload?.paginationActive || Number(payload?.total || 0) > 15));
       })
-      .catch(() => { setTopToday([]); setTopTotalPages(1); setTopPaginationActive(false); })
+      .catch((err) => {
+        setTopToday([]);
+        setTopTotalPages(1);
+        setTopPaginationActive(false);
+        setTopTodayError(getFriendlyRequestMessage(err, 'Unable to load today\'s launches right now.'));
+      })
       .finally(() => setLoadingTopToday(false));
   }, [topPage]);
 
@@ -267,14 +323,14 @@ function ListingsPage() {
   return (
     <div>
       <Helmet>
-        <title>LaunchRadar — Discover the Hottest AI Tools &amp; Startups</title>
+        <title>wayb - Discover the Hottest AI Tools &amp; Startups</title>
         <meta name="description" content="Real-time discovery of the hottest AI tools, products, and startups from Product Hunt and beyond. Track every AI launch as it happens." />
-        <meta property="og:title" content="LaunchRadar — Discover the Hottest AI Tools & Startups" />
+        <meta property="og:title" content="wayb - Discover the Hottest AI Tools & Startups" />
         <meta property="og:description" content="Real-time discovery of the hottest AI tools, products, and startups from Product Hunt and beyond." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://launchradar.io/" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="LaunchRadar — Discover the Hottest AI Tools & Startups" />
+        <meta name="twitter:title" content="wayb - Discover the Hottest AI Tools & Startups" />
         <meta name="twitter:description" content="Track every AI launch in real-time. Trending tools, crypto, agents, and airdrops." />
       </Helmet>
 
@@ -289,15 +345,28 @@ function ListingsPage() {
         </div>
         <div className="hero-content">
           <span className="hero-badge">
-            <Zap size={13} /> Real-time AI product tracking
+            <span className="hero-live-dot" />
+            Live &mdash; AI &amp; Startup Intelligence
           </span>
           <h1 className="hero-title">
-            Track Every AI Launch<br />
-            <span className="hero-title-grad">Before the World Does</span>
+            What are you building?
           </h1>
           <p className="hero-sub">
-            Discover the hottest AI tools, products, and startups from Product Hunt and beyond — updated daily.
+            Build smarter, not blindly.
           </p>
+          <div className="hero-idea-box" aria-label="Example startup ideas">
+            <div className="hero-idea-header">
+              <span className="hero-idea-bulb-glow" />
+              <span className="hero-idea-bulb-shell">
+                <Lightbulb size={18} />
+              </span>
+              <span className="hero-idea-header-label">Your idea</span>
+            </div>
+            <div className="hero-idea-display">
+              <span className="hero-idea-text">{typedIdea}</span>
+              <span className="hero-idea-caret" aria-hidden="true" />
+            </div>
+          </div>
           <div className="hero-actions">
             <a href="#products" className="btn btn-primary">
               Explore Products <ArrowRight size={15} />
@@ -310,12 +379,34 @@ function ListingsPage() {
               <Rocket size={15} /> Submit a Launch
             </button>
           </div>
+          <div className="hero-stats">
+            <div className="hero-stat">
+              <span className="hero-stat-num">500+</span>
+              <span className="hero-stat-label">Products Today</span>
+            </div>
+            <div className="hero-stat-div" />
+            <div className="hero-stat">
+              <span className="hero-stat-num">1,200+</span>
+              <span className="hero-stat-label">AI News Articles</span>
+            </div>
+            <div className="hero-stat-div" />
+            <div className="hero-stat">
+              <span className="hero-stat-num">10</span>
+              <span className="hero-stat-label">Trending Now</span>
+            </div>
+            <div className="hero-stat-div" />
+            <div className="hero-stat">
+              <span className="hero-stat-num">30+</span>
+              <span className="hero-stat-label">Airdrops Live</span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ---- CATEGORY CHIPS ---- */}
       <section className="category-section">
         <div className="category-inner">
+          {topicsError && <p className="form-error" style={{ marginBottom: 12 }}>{topicsError}</p>}
           <div className="category-chips">
             {loadingTopics && (
               <>
@@ -427,7 +518,13 @@ function ListingsPage() {
               </>
             )}
 
-            {!loadingTrending && !activeTrending && (
+            {!loadingTrending && trendingError && (
+              <div className="empty-state" style={{ padding: '24px' }}>
+                <p>{trendingError}</p>
+              </div>
+            )}
+
+            {!loadingTrending && !trendingError && !activeTrending && (
               <div className="empty-state" style={{ padding: '24px' }}>
                 <p>No trending products yet.</p>
               </div>
@@ -443,7 +540,7 @@ function ListingsPage() {
               </h2>
             </div>
 
-            {error && <p className="form-error" style={{ marginBottom: 12 }}>{error}</p>}
+            {topTodayError && <p className="form-error" style={{ marginBottom: 12 }}>{topTodayError}</p>}
 
             {loadingTopToday && (
               <div className="product-list">
@@ -453,7 +550,7 @@ function ListingsPage() {
               </div>
             )}
 
-            {!loadingTopToday && visibleProducts.length === 0 && (
+            {!loadingTopToday && !topTodayError && visibleProducts.length === 0 && (
               <div className="empty-state">
                 <Rocket size={28} strokeWidth={1.5} />
                 <p>No products found for today.</p>
@@ -541,7 +638,7 @@ function ListingsPage() {
           </section>
         </main>
 
-        {/* ASIDE — News Feed */}
+        {/* ASIDE â€” News Feed */}
         <aside className="content-aside">
           <div className="news-aside">
             <div className="news-aside-header">

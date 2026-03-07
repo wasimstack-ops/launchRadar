@@ -65,15 +65,15 @@ function SubmitListingPage() {
   return (
     <div>
       <Helmet>
-        <title>Submit Your Product — Get Discovered | LaunchRadar</title>
-        <meta name="description" content="Submit your AI tool, startup, or product to LaunchRadar. Get discovered by thousands of early adopters and tech enthusiasts." />
-        <meta property="og:title" content="Submit Your Product — Get Discovered | LaunchRadar" />
-        <meta property="og:description" content="Submit your AI tool or startup to LaunchRadar and get discovered by thousands of early adopters." />
+        <title>Submit Your Product - Get Discovered | wayb</title>
+        <meta name="description" content="Submit your AI tool, startup, or product to wayb. Get discovered by thousands of early adopters and tech enthusiasts." />
+        <meta property="og:title" content="Submit Your Product - Get Discovered | wayb" />
+        <meta property="og:description" content="Submit your AI tool or startup to wayb and get discovered by thousands of early adopters." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://launchradar.io/submit" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Submit Your Product | LaunchRadar" />
-        <meta name="twitter:description" content="Get your AI tool or startup discovered on LaunchRadar." />
+        <meta name="twitter:title" content="Submit Your Product | wayb" />
+        <meta name="twitter:description" content="Get your AI tool or startup discovered on wayb." />
       </Helmet>
 
       <Navbar />
@@ -86,7 +86,7 @@ function SubmitListingPage() {
             </p>
             <h1 className="submit-title">Share an AI product</h1>
             <p className="submit-sub">
-              Spotted a great new AI tool? Submit it for review — approved listings are featured on the homepage.
+              Spotted a great new AI tool? Submit it for review â€” approved listings are featured on the homepage.
             </p>
           </div>
 
@@ -184,7 +184,7 @@ function SubmitListingPage() {
 
                 <div className="submit-form-actions">
                   <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? 'Submitting…' : (<>Submit for review <ArrowRight size={15} /></>)}
+                    {loading ? 'Submittingâ€¦' : (<>Submit for review <ArrowRight size={15} /></>)}
                   </button>
                   <Link to="/" className="btn btn-ghost">
                     <ArrowLeft size={14} /> Cancel

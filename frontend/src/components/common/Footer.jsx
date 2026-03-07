@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Zap } from 'lucide-react';
+import { Boxes } from 'lucide-react';
 
 function Footer() {
   const year = new Date().getFullYear();
@@ -9,9 +9,9 @@ function Footer() {
       <div className="footer-inner">
         <Link to="/" className="footer-logo">
           <span className="footer-logo-icon">
-            <Zap size={12} />
+            <Boxes size={12} />
           </span>
-          LaunchRadar
+          wayb
         </Link>
 
         <div className="footer-links">
@@ -20,9 +20,7 @@ function Footer() {
           <Link to="/auth" className="footer-link">Sign In</Link>
         </div>
 
-        <p className="footer-copy">
-          Â© {year} LaunchRadar Â· Powered by Product Hunt API
-        </p>
+        <p className="footer-copy">© {year} wayb · Powered by Product Hunt API</p>
       </div>
     </footer>
   );

@@ -25,6 +25,7 @@ let weeklyRefreshStartTimeout = null;
 let weeklyRefreshInterval = null;
 let trendingSyncStartTimeout = null;
 let trendingSyncInterval = null;
+let trendingSyncInFlight = null;
 
 const PRODUCTHUNT_POSTS_QUERY = `
 query LaunchRadarProductHuntPosts {
@@ -131,6 +132,7 @@ query LaunchRadarProductHuntTrending {
         tagline
         votesCount
         website
+        thumbnail { url }
       }
     }
   }
@@ -671,6 +673,7 @@ async function syncTrendingProductsDaily() {
       tagline: String(item?.tagline || '').trim(),
       votesCount: Number(item?.votesCount || 0),
       website: String(item?.website || '').trim(),
+      thumbnail: String(item?.thumbnail?.url || '').trim(),
       source: 'producthunt',
       sourceDate,
     }))
@@ -698,12 +701,37 @@ async function syncTrendingProductsDaily() {
   };
 }
 
-async function getTrendingProducts(limit = 10) {
+async function ensureTrendingProductsAvailable(limit = 10) {
   const safeLimit = Number.isFinite(Number(limit)) ? Math.max(1, Math.min(50, Number(limit))) : 10;
+  const cached = await ProductHuntTrending.find({})
+    .sort({ votesCount: -1, name: 1 })
+    .limit(safeLimit)
+    .lean();
+
+  const hasMissingThumbnails = cached.length > 0 && cached.some((item) => !String(item?.thumbnail || '').trim());
+  if (cached.length > 0 && !hasMissingThumbnails) return cached;
+
+  if (!trendingSyncInFlight) {
+    trendingSyncInFlight = syncTrendingProductsDaily()
+      .catch((error) => {
+        logger.error('[ProductHunt Trending] fallback sync failed', error);
+        return null;
+      })
+      .finally(() => {
+        trendingSyncInFlight = null;
+      });
+  }
+
+  await trendingSyncInFlight;
+
   return ProductHuntTrending.find({})
     .sort({ votesCount: -1, name: 1 })
     .limit(safeLimit)
     .lean();
+}
+
+async function getTrendingProducts(limit = 10) {
+  return ensureTrendingProductsAvailable(limit);
 }
 
 function getMsUntilNextUtcRun(hour = 0, minute = DAILY_SYNC_DELAY_MINUTES) {

@@ -124,15 +124,15 @@ function AirdropsPage() {
   return (
     <div>
       <Helmet>
-        <title>Crypto Airdrops — Free Token Campaigns | LaunchRadar</title>
+        <title>Crypto Airdrops - Free Token Campaigns | wayb</title>
         <meta name="description" content="Discover active and confirmed crypto airdrop campaigns. Find free token opportunities grouped by priority and status." />
-        <meta property="og:title" content="Crypto Airdrops — Free Token Campaigns | LaunchRadar" />
-        <meta property="og:description" content="Discover active and confirmed crypto airdrop campaigns. Find free token opportunities on LaunchRadar." />
+        <meta property="og:title" content="Crypto Airdrops - Free Token Campaigns | wayb" />
+        <meta property="og:description" content="Discover active and confirmed crypto airdrop campaigns. Find free token opportunities on wayb." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://launchradar.io/airdrops" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Crypto Airdrops | LaunchRadar" />
-        <meta name="twitter:description" content="Active crypto airdrop campaigns — confirmed and latest opportunities." />
+        <meta name="twitter:title" content="Crypto Airdrops | wayb" />
+        <meta name="twitter:description" content="Active crypto airdrop campaigns - confirmed and latest opportunities." />
       </Helmet>
 
       <Navbar />
@@ -163,3 +163,4 @@ function AirdropsPage() {
 }
 
 export default AirdropsPage;
+

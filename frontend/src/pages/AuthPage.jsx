@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft, Boxes } from 'lucide-react';
 import api from '../api/client';
 
 function AuthPage() {
@@ -87,11 +87,11 @@ function AuthPage() {
 
       <section className="auth-card">
         {/* Logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
+        <Link to="/" className="auth-logo">
           <span className="auth-logo-icon">
-            <Zap size={14} />
+            <Boxes size={14} />
           </span>
-          <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text)' }}>LaunchRadar</span>
+          <span>wayb</span>
         </Link>
 
         <h1 className="auth-title">Welcome back</h1>
