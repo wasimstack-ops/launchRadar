@@ -16,6 +16,7 @@ const productHuntAutomationRoutes = require('../modules/automation/producthunt/p
 const adminOpsRoutes = require('../modules/admin/admin-ops.routes');
 const airdropScraperRoutes = require('../modules/airdrops/external/airdropScraper.routes');
 const agentRoutes = require('../modules/agents/agent.routes');
+const ideaReportRoutes = require('../modules/idea-reports/idea-report.routes');
 
 const router = express.Router();
 
@@ -36,5 +37,6 @@ router.use(productHuntAutomationRoutes);
 router.use(adminOpsRoutes);
 router.use(airdropScraperRoutes);
 router.use(agentRoutes);
+router.use(ideaReportRoutes);
 
 module.exports = router;

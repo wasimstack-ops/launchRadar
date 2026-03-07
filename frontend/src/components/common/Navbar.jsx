@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Boxes, LogOut, Moon, Rocket, Search, Sun } from 'lucide-react';
 import api from '../../api/client';
+import AuthPromptModal from './AuthPromptModal';
 
 function getInitials(value) {
   const text = String(value || '').trim();
@@ -17,6 +18,22 @@ function Navbar({ searchTerm, onSearchChange }) {
   const location = useLocation();
   const [isLight, setIsLight] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
+  const loadCurrentUser = () => {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      setCurrentUser(null);
+      return;
+    }
+
+    api.get('/api/auth/me')
+      .then((res) => setCurrentUser(res.data?.data || null))
+      .catch(() => {
+        localStorage.removeItem('userToken');
+        setCurrentUser(null);
+      });
+  };
 
   // Apply saved theme on mount
   useEffect(() => {
@@ -29,11 +46,13 @@ function Navbar({ searchTerm, onSearchChange }) {
 
   // Load current user
   useEffect(() => {
-    const token = localStorage.getItem('userToken');
-    if (!token) return;
-    api.get('/api/auth/me')
-      .then((res) => setCurrentUser(res.data?.data || null))
-      .catch(() => { localStorage.removeItem('userToken'); });
+    loadCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    const handleAuthChanged = () => loadCurrentUser();
+    window.addEventListener('auth-changed', handleAuthChanged);
+    return () => window.removeEventListener('auth-changed', handleAuthChanged);
   }, []);
 
   const toggleTheme = () => {
@@ -46,13 +65,24 @@ function Navbar({ searchTerm, onSearchChange }) {
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     setCurrentUser(null);
+    window.dispatchEvent(new Event('auth-changed'));
     navigate('/');
+  };
+
+  const handleSubmitClick = (event) => {
+    event.preventDefault();
+    if (currentUser) {
+      navigate('/?compose=1');
+      return;
+    }
+    setShowAuthPrompt(true);
   };
 
   const isActive = (path) => location.pathname === path;
   return (
-    <nav className="site-nav">
-      <div className="nav-inner">
+    <>
+      <nav className="site-nav">
+        <div className="nav-inner">
         {/* Logo */}
         <Link to="/" className="nav-logo">
           <span className="nav-logo-icon">
@@ -92,8 +122,8 @@ function Navbar({ searchTerm, onSearchChange }) {
         </div>
 
         {/* Actions */}
-        <div className="nav-actions">
-          <Link to="/submit" className="nav-submit-btn">
+          <div className="nav-actions">
+            <Link to="/submit" className="nav-submit-btn" onClick={handleSubmitClick}>
             <Rocket size={14} />
             Submit
           </Link>
@@ -115,15 +145,7 @@ function Navbar({ searchTerm, onSearchChange }) {
                 <LogOut size={13} />
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className="nav-sign-in"
-              onClick={() => navigate('/auth')}
-            >
-              Sign In
-            </button>
-          )}
+          ) : null}
 
           <button
             type="button"
@@ -133,9 +155,22 @@ function Navbar({ searchTerm, onSearchChange }) {
           >
             {isLight ? <Moon size={15} /> : <Sun size={15} />}
           </button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <AuthPromptModal
+        open={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        onSuccess={() => {
+          setShowAuthPrompt(false);
+          navigate('/?compose=1');
+        }}
+        onGoogleContinue={() => {
+          setShowAuthPrompt(false);
+          navigate(`/auth?next=${encodeURIComponent('/?compose=1')}`);
+        }}
+      />
+    </>
   );
 }
 

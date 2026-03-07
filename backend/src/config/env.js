@@ -25,6 +25,8 @@ const env = {
 
   // Google OAuth
   googleClientId: getEnv('GOOGLE_CLIENT_ID', ''),
+  googleAiApiKey: getEnv('GOOGLE_AI_API_KEY', ''),
+  googleAiModel: getEnv('GOOGLE_AI_MODEL', 'gemini-2.5-flash'),
 
   // Product Hunt
   productHuntToken: getEnv('PRODUCTHUNT_TOKEN', ''),

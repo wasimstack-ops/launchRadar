@@ -10,6 +10,8 @@ import CategoryProductsPage from '../pages/CategoryProductsPage';
 import ListingFormPage from '../pages/ListingFormPage';
 import SubmitListingPage from '../pages/SubmitListingPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import IdeaReportPage from '../pages/IdeaReportPage';
+import LeaderboardPage from '../pages/LeaderboardPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
 function AppRoutes() {
@@ -37,6 +39,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute mode="user">
               <SubmitListingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/idea-report/:id"
+          element={
+            <ProtectedRoute mode="user">
+              <IdeaReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute mode="user">
+              <LeaderboardPage />
             </ProtectedRoute>
           }
         />

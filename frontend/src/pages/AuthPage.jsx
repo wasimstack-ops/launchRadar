@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Boxes } from 'lucide-react';
 import api from '../api/client';
 
@@ -8,6 +8,8 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const buttonRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const nextPath = new URLSearchParams(location.search).get('next') || '/';
 
   useEffect(() => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -18,6 +20,7 @@ function AuthPage() {
     }
 
     let cancelled = false;
+    let pollId = null;
 
     const handleCredential = async (response) => {
       if (cancelled) return;
@@ -33,7 +36,8 @@ function AuthPage() {
         const token = apiResponse.data?.data?.token;
         if (token) {
           localStorage.setItem('userToken', token);
-          navigate('/', { replace: true });
+          window.dispatchEvent(new Event('auth-changed'));
+          navigate(nextPath, { replace: true });
         }
       } catch (requestError) {
         setError(requestError?.response?.data?.message || 'Google sign-in failed');
@@ -67,6 +71,27 @@ function AuthPage() {
       };
     }
 
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript) {
+      if (window.google) {
+        initGoogle();
+      } else {
+        const handleExistingLoad = () => initGoogle();
+        existingScript.addEventListener('load', handleExistingLoad, { once: true });
+        pollId = window.setInterval(() => {
+          if (window.google) {
+            window.clearInterval(pollId);
+            pollId = null;
+            initGoogle();
+          }
+        }, 150);
+      }
+      return () => {
+        cancelled = true;
+        if (pollId) window.clearInterval(pollId);
+      };
+    }
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
@@ -77,8 +102,9 @@ function AuthPage() {
 
     return () => {
       cancelled = true;
+      if (pollId) window.clearInterval(pollId);
     };
-  }, [navigate]);
+  }, [navigate, nextPath]);
 
   return (
     <main className="auth-shell">

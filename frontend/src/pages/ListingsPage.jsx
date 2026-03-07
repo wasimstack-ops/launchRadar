@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import {
   ArrowRight,
@@ -18,6 +18,7 @@ import {
 import api from '../api/client';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import AuthPromptModal from '../components/common/AuthPromptModal';
 
 const FALLBACK_THUMB = 'https://placehold.co/64x64/141b27/6366f1?text=?';
 const HERO_IDEA_EXAMPLES = [
@@ -173,10 +174,16 @@ function NewsletterCTA() {
 // ---- Main Page ----
 function ListingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [ideaExampleIndex, setIdeaExampleIndex] = useState(0);
   const [typedIdea, setTypedIdea] = useState('');
   const [isDeletingIdea, setIsDeletingIdea] = useState(false);
+  const [ideaInput, setIdeaInput] = useState('');
+  const [ideaSubmitLoading, setIdeaSubmitLoading] = useState(false);
+  const [ideaSubmitError, setIdeaSubmitError] = useState('');
+  const [showIdeaPrompt, setShowIdeaPrompt] = useState(false);
+  const [submitAfterAuth, setSubmitAfterAuth] = useState(false);
 
   const [topics, setTopics] = useState([]);
   const [topToday, setTopToday] = useState([]);
@@ -196,6 +203,8 @@ function ListingsPage() {
 
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const ideaInputRef = useRef(null);
 
   useEffect(() => {
     const activeIdea = HERO_IDEA_EXAMPLES[ideaExampleIndex] || '';
@@ -219,6 +228,31 @@ function ListingsPage() {
 
     return () => clearTimeout(timeoutId);
   }, [ideaExampleIndex, isDeletingIdea, typedIdea]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('compose') === '1' && ideaInputRef.current) {
+      ideaInputRef.current.focus();
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const shouldResume = params.get('resumeIdea') === '1';
+    const savedIdea = sessionStorage.getItem('pendingIdeaSubmission') || '';
+    const token = localStorage.getItem('userToken');
+
+    if (!shouldResume || !savedIdea || !token) return;
+
+    setIdeaInput(savedIdea);
+    sessionStorage.removeItem('pendingIdeaSubmission');
+    navigate('/', { replace: true });
+    window.setTimeout(() => {
+      setSubmitAfterAuth(false);
+      setIdeaSubmitError('');
+      submitIdeaForScoring(savedIdea);
+    }, 0);
+  }, [location.search]);
 
   // Load categories/topics
   useEffect(() => {
@@ -320,6 +354,49 @@ function ListingsPage() {
     setCarouselIdx((i) => (i + 1) % trendingItems.length);
   };
 
+  const submitIdeaForScoring = async (ideaOverride) => {
+    const idea = String(ideaOverride ?? ideaInput).trim();
+    if (!idea) {
+      setShowIdeaPrompt(true);
+      ideaInputRef.current?.focus();
+      return;
+    }
+
+    setIdeaSubmitLoading(true);
+    setIdeaSubmitError('');
+
+    try {
+      const response = await api.post('/api/idea-reports', { idea });
+      const reportId = response.data?.data?._id;
+      if (!reportId) {
+        throw new Error('Idea report was created without an id');
+      }
+      setIdeaInput('');
+      navigate(`/idea-report/${reportId}`);
+    } catch (requestError) {
+      setIdeaSubmitError(requestError?.response?.data?.message || 'We could not evaluate your idea right now.');
+    } finally {
+      setIdeaSubmitLoading(false);
+    }
+  };
+
+  const handleHeroSubmit = () => {
+    const idea = String(ideaInput || '').trim();
+    if (!idea) {
+      setShowIdeaPrompt(true);
+      ideaInputRef.current?.focus();
+      return;
+    }
+
+    if (localStorage.getItem('userToken')) {
+      submitIdeaForScoring(idea);
+      return;
+    }
+
+    setSubmitAfterAuth(true);
+    setShowAuthPrompt(true);
+  };
+
   return (
     <div>
       <Helmet>
@@ -363,10 +440,30 @@ function ListingsPage() {
               <span className="hero-idea-header-label">Your idea</span>
             </div>
             <div className="hero-idea-display">
-              <span className="hero-idea-text">{typedIdea}</span>
-              <span className="hero-idea-caret" aria-hidden="true" />
+              <textarea
+                ref={ideaInputRef}
+                className="hero-idea-input"
+                placeholder={typedIdea || 'Type your product idea here...'}
+                value={ideaInput}
+                onChange={(event) => {
+                  setIdeaInput(event.target.value);
+                  if (ideaSubmitError) setIdeaSubmitError('');
+                }}
+                rows={4}
+              />
+            </div>
+            <div className="hero-idea-actions">
+              <button
+                type="button"
+                className="hero-idea-submit-btn"
+                onClick={handleHeroSubmit}
+                disabled={ideaSubmitLoading}
+              >
+                {ideaSubmitLoading ? 'Scoring...' : 'Submit'}
+              </button>
             </div>
           </div>
+          {ideaSubmitError && <p className="form-error" style={{ marginTop: -6 }}>{ideaSubmitError}</p>}
           <div className="hero-actions">
             <a href="#products" className="btn btn-primary">
               Explore Products <ArrowRight size={15} />
@@ -374,7 +471,7 @@ function ListingsPage() {
             <button
               type="button"
               className="btn btn-ghost"
-              onClick={() => navigate('/submit')}
+              onClick={handleHeroSubmit}
             >
               <Rocket size={15} /> Submit a Launch
             </button>
@@ -712,6 +809,59 @@ function ListingsPage() {
 
       <NewsletterCTA />
       <Footer />
+      <AuthPromptModal
+        open={showAuthPrompt}
+        onClose={() => {
+          setShowAuthPrompt(false);
+          setSubmitAfterAuth(false);
+        }}
+        onSuccess={() => {
+          setShowAuthPrompt(false);
+          if (submitAfterAuth && (ideaInput || sessionStorage.getItem('pendingIdeaSubmission'))) {
+            const idea = String(ideaInput || sessionStorage.getItem('pendingIdeaSubmission') || '').trim();
+            if (idea) {
+              setSubmitAfterAuth(false);
+              window.setTimeout(() => {
+                submitIdeaForScoring(idea);
+              }, 0);
+              return;
+            }
+          }
+          navigate('/?compose=1');
+        }}
+        onGoogleContinue={() => {
+          if (ideaInput.trim()) {
+            sessionStorage.setItem('pendingIdeaSubmission', ideaInput.trim());
+            setSubmitAfterAuth(false);
+          }
+          setShowAuthPrompt(false);
+          navigate(`/auth?next=${encodeURIComponent('/?resumeIdea=1')}`);
+        }}
+      />
+      {showIdeaPrompt && (
+        <div className="idea-alert-backdrop" role="presentation" onClick={() => setShowIdeaPrompt(false)}>
+          <div
+            className="idea-alert-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="idea-alert-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="idea-alert-title" className="idea-alert-title">Add your idea first</h2>
+            <p className="idea-alert-copy">Enter your product idea to generate a score.</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setShowIdeaPrompt(false);
+                ideaInputRef.current?.focus();
+              }}
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
