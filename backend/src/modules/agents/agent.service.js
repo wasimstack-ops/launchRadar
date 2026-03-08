@@ -99,15 +99,34 @@ async function fetchHFSpaces(filter, limit = 50) {
   return Array.isArray(response?.data) ? response.data : [];
 }
 
-// Fetch AI agent spaces from Hugging Face — trending demos and tools
-async function fetchHuggingFaceSpaces() {
-  const [aiAgentSpaces, mcpSpaces, llmAgentSpaces] = await Promise.all([
-    fetchHFSpaces('ai-agent', 50).catch(() => []),
-    fetchHFSpaces('mcp', 30).catch(() => []),
-    fetchHFSpaces('llm-agent', 30).catch(() => []),
-  ]);
+// HF filter tags mapped to UI categories
+// frontend buildCategoryMatches() auto-classifies based on title/description/tags
+const HF_FILTERS = [
+  // Core agent tags
+  { filter: 'ai-agent',         limit: 50 },
+  { filter: 'llm-agent',        limit: 40 },
+  { filter: 'mcp',              limit: 30 },
+  { filter: 'agent',            limit: 40 },
+  // Productivity
+  { filter: 'assistant',        limit: 30 },
+  { filter: 'automation',       limit: 30 },
+  // Development
+  { filter: 'code-generation',  limit: 30 },
+  { filter: 'coding-assistant', limit: 20 },
+  // Data Science
+  { filter: 'data-analysis',    limit: 20 },
+  { filter: 'text-generation',  limit: 20 },
+  // Security / other
+  { filter: 'multi-agent',      limit: 20 },
+];
 
-  const raw = [...aiAgentSpaces, ...mcpSpaces, ...llmAgentSpaces];
+// Fetch AI agent spaces from Hugging Face — covering all sidebar categories
+async function fetchHuggingFaceSpaces() {
+  const batches = await Promise.allSettled(
+    HF_FILTERS.map(({ filter, limit }) => fetchHFSpaces(filter, limit))
+  );
+
+  const raw = batches.flatMap((b) => (b.status === 'fulfilled' ? b.value : []));
   const all = dedupeByLink(
     raw
       .filter((s) => !s.private)

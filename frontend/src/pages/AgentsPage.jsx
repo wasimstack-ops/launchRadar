@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Code2,
   Database,
-  ExternalLink,
   LockKeyhole,
   Megaphone,
   Search,
@@ -109,6 +108,11 @@ function normalizeAgent(item) {
   };
 }
 
+function isLocalBrowser() {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+}
+
 function useFetchAgents(endpoint) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -119,23 +123,35 @@ function useFetchAgents(endpoint) {
     setLoading(true);
     setError('');
 
-    api
-      .get(endpoint, { params: { page: 1, limit: FETCH_LIMIT, sort: 'trending' } })
-      .then((res) => {
+    const load = async () => {
+      try {
+        let res = await api.get(endpoint, { params: { page: 1, limit: FETCH_LIMIT, sort: 'trending' } });
+        let data = res?.data?.data;
+        let rawItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+
+        // Hard fallback for the AI Agents tab when running locally:
+        // fetch straight from the local AI agents endpoint.
+        if (endpoint === '/api/agents/ai' && rawItems.length === 0 && isLocalBrowser()) {
+          res = await api.get('http://localhost:5000/api/agents/ai', {
+            params: { page: 1, limit: FETCH_LIMIT, sort: 'trending' },
+          });
+          data = res?.data?.data;
+          rawItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        }
+
         if (!mounted) return;
-        const data = res?.data?.data;
-        const rawItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
         setItems(rawItems.map(normalizeAgent));
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!mounted) return;
         setError(err?.response?.data?.message || 'Failed to load data.');
         setItems([]);
-      })
-      .finally(() => {
+      } finally {
         if (!mounted) return;
         setLoading(false);
-      });
+      }
+    };
+
+    load();
 
     return () => {
       mounted = false;
@@ -199,6 +215,12 @@ function AgentsPage() {
   useEffect(() => {
     setPage(1);
   }, [activeTab, search, selectedCategories, refine, sort]);
+
+  useEffect(() => {
+    setSearch('');
+    setSelectedCategories([]);
+    setRefine({ openSource: false, freeTier: false, verified: false });
+  }, [activeTab]);
 
   const toggleCategory = (category) => {
     if (category === 'all') {
@@ -385,7 +407,6 @@ function AgentsPage() {
                         <th>Description</th>
                         <th>Category</th>
                         <th>Metrics</th>
-                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -404,7 +425,9 @@ function AgentsPage() {
                                 </div>
                                 <div>
                                   <div className={styles.agentName}>{item.title}</div>
-                                  <div className={styles.agentSubline}>{item.language || item.rawSource || 'AI Agent'}</div>
+                                  <div className={styles.agentSubline}>
+                                    {item.language || (item.sourceType === 'open_source' ? 'Open Source Agent' : 'AI Agent')}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -424,14 +447,6 @@ function AgentsPage() {
                                   <strong>{formatMetric(item.scoreActivity)}</strong>
                                   <span>activity</span>
                                 </div>
-                              </div>
-                            </td>
-                            <td>
-                              <div className={styles.actionCell}>
-                                <a href={item.link} target="_blank" rel="noreferrer noopener" className={styles.detailLink}>
-                                  Details <ExternalLink size={12} />
-                                </a>
-                                {item.isVerified ? <span className={styles.verifiedBadge}><ShieldCheck size={12} /> Verified</span> : null}
                               </div>
                             </td>
                           </tr>

@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Lightbulb,
   MessageSquare,
   Newspaper,
   Rocket,
@@ -438,13 +437,6 @@ function ListingsPage() {
             Get VC/Investor level scoring on your business idea and get featured and funded if you rank in the Top 5 leaderboard on wayb.
           </p>
           <div className="hero-idea-box" aria-label="Example startup ideas">
-            <div className="hero-idea-header">
-              <span className="hero-idea-bulb-glow" />
-              <span className="hero-idea-bulb-shell">
-                <Lightbulb size={18} />
-              </span>
-              <span className="hero-idea-header-label">Your idea</span>
-            </div>
             <div className="hero-idea-display">
               <textarea
                 ref={ideaInputRef}
@@ -481,27 +473,6 @@ function ListingsPage() {
             >
               <Rocket size={15} /> Submit a Launch
             </button>
-          </div>
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <span className="hero-stat-num">500+</span>
-              <span className="hero-stat-label">Products Today</span>
-            </div>
-            <div className="hero-stat-div" />
-            <div className="hero-stat">
-              <span className="hero-stat-num">1,200+</span>
-              <span className="hero-stat-label">AI News Articles</span>
-            </div>
-            <div className="hero-stat-div" />
-            <div className="hero-stat">
-              <span className="hero-stat-num">10</span>
-              <span className="hero-stat-label">Trending Now</span>
-            </div>
-            <div className="hero-stat-div" />
-            <div className="hero-stat">
-              <span className="hero-stat-num">30+</span>
-              <span className="hero-stat-label">Airdrops Live</span>
-            </div>
           </div>
         </div>
       </section>

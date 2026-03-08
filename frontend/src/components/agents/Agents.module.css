@@ -427,28 +427,6 @@
   letter-spacing: 0.08em;
 }
 
-.actionCell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.detailLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--accent-h);
-  font-weight: 700;
-  font-size: 0.84rem;
-  text-decoration: none;
-}
-
-.detailLink:hover {
-  text-decoration: none;
-  color: var(--text);
-}
-
 .pagination {
   display: flex;
   align-items: center;

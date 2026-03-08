@@ -5,6 +5,7 @@ const agentController = require('./agent.controller');
 const router = express.Router();
 
 router.post('/admin/agents/fetch', adminKeyMiddleware, agentController.fetchAgentsController);
+router.post('/admin/futurepedia/fetch', adminKeyMiddleware, agentController.fetchFuturepediaController);
 
 router.get('/agents/latest', agentController.getLatestAgentsController);
 router.get('/agents/trending', agentController.getTrendingAgentsController);

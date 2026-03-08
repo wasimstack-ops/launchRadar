@@ -88,7 +88,7 @@ function Navbar({ searchTerm, onSearchChange }) {
           <span className="nav-logo-icon">
             <Boxes size={14} />
           </span>
-          wayb
+          WAYB
         </Link>
 
         {/* Search (optional, shown when prop provided) */}

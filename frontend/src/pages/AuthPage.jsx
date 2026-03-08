@@ -117,7 +117,7 @@ function AuthPage() {
           <span className="auth-logo-icon">
             <Boxes size={14} />
           </span>
-          <span>wayb</span>
+          <span>WAYB</span>
         </Link>
 
         <h1 className="auth-title">Welcome back</h1>
