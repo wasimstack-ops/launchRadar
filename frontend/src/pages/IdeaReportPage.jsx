@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BarChart2, ChevronRight, FileText, Globe2, Sparkles, Trophy } from 'lucide-react';
+import { ArrowLeft, BarChart2, BriefcaseBusiness, ChevronRight, FileText, Globe2, Sparkles, Trophy } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -75,9 +75,14 @@ function IdeaReportPage() {
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
               <ArrowLeft size={14} /> Go Back to Dashboard
             </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/leaderboard')}>
-              View Leaderboard <ChevronRight size={14} />
-            </button>
+            <div className="idea-report-topbar-actions">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/workspace')}>
+                <BriefcaseBusiness size={14} /> My Workspace
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/leaderboard')}>
+                View Leaderboard <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
 
           {loading && (

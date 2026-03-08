@@ -482,7 +482,7 @@ function ListingsPage() {
                 onClick={handleHeroSubmit}
                 disabled={ideaSubmitLoading}
               >
-                {ideaSubmitLoading ? 'Scoring...' : 'Submit'}
+                Submit
               </button>
             </div>
           </div>
@@ -851,6 +851,13 @@ function ListingsPage() {
           navigate(`/auth?next=${encodeURIComponent(nextPath)}`);
         }}
       />
+      {ideaSubmitLoading && (
+        <div className="scoring-popup-backdrop" role="presentation">
+          <div className="scoring-popup" role="status" aria-live="polite" aria-label="Scoring your idea">
+            Scoring...
+          </div>
+        </div>
+      )}
       {showIdeaPrompt && (
         <div className="idea-alert-backdrop" role="presentation" onClick={() => setShowIdeaPrompt(false)}>
           <div

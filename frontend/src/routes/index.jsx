@@ -12,6 +12,7 @@ import SubmitListingPage from '../pages/SubmitListingPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
 import IdeaReportPage from '../pages/IdeaReportPage';
 import LeaderboardPage from '../pages/LeaderboardPage';
+import WorkspacePage from '../pages/WorkspacePage';
 import CommunityPage from '../pages/CommunityPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
@@ -61,6 +62,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute mode="user">
               <LeaderboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workspace"
+          element={
+            <ProtectedRoute mode="user">
+              <WorkspacePage />
             </ProtectedRoute>
           }
         />

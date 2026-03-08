@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Boxes, LogOut, Menu, Moon, Rocket, Search, Sun, X } from 'lucide-react';
+import { Boxes, LogOut, Menu, Moon, Rocket, Sun, X } from 'lucide-react';
 import api from '../../api/client';
 import AuthPromptModal from './AuthPromptModal';
 
@@ -96,20 +96,6 @@ function Navbar({ searchTerm, onSearchChange }) {
             WAYB
           </Link>
 
-          {/* Search (optional, shown when prop provided) */}
-          {onSearchChange !== undefined && (
-            <div className="nav-search-wrap">
-              <Search size={15} className="nav-search-icon" />
-              <input
-                type="text"
-                className="nav-search"
-                placeholder="Search products..."
-                value={searchTerm || ''}
-                onChange={(e) => onSearchChange(e.target.value)}
-              />
-            </div>
-          )}
-
           {/* Nav Links */}
           <div className="nav-links">
             <Link to="/" className={`nav-link${isActive('/') ? ' active' : ''}`}>
@@ -124,6 +110,11 @@ function Navbar({ searchTerm, onSearchChange }) {
             <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
               Airdrops
             </Link>
+            {currentUser ? (
+              <Link to="/workspace" className={`nav-link${isActive('/workspace') ? ' active' : ''}`}>
+                My Workspace
+              </Link>
+            ) : null}
           </div>
 
           {/* Actions */}
@@ -132,6 +123,12 @@ function Navbar({ searchTerm, onSearchChange }) {
               <Rocket size={14} />
               Submit
             </Link>
+
+            {!currentUser ? (
+              <Link to="/auth" className="nav-login-btn">
+                Log In
+              </Link>
+            ) : null}
 
             {currentUser ? (
               <div className="user-chip">
@@ -187,6 +184,16 @@ function Navbar({ searchTerm, onSearchChange }) {
               <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
                 Airdrops
               </Link>
+              {currentUser ? (
+                <Link to="/workspace" className={`nav-link${isActive('/workspace') ? ' active' : ''}`}>
+                  My Workspace
+                </Link>
+              ) : null}
+              {!currentUser ? (
+                <Link to="/auth" className="nav-link">
+                  Log In
+                </Link>
+              ) : null}
             </div>
             {currentUser ? (
               <div className="nav-mobile-user">

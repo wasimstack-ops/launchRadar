@@ -329,6 +329,36 @@ async function getIdeaReportById({ userId, reportId, isAdmin = false }) {
   return report;
 }
 
+async function listUserIdeaReports({ userId, page = 1, limit = 12 }) {
+  const normalizedPage = Math.max(1, Number(page) || 1);
+  const normalizedLimit = Math.max(1, Math.min(24, Number(limit) || 12));
+  const skip = (normalizedPage - 1) * normalizedLimit;
+
+  const [total, rows] = await Promise.all([
+    IdeaReport.countDocuments({ user: userId }),
+    IdeaReport.find({ user: userId })
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(normalizedLimit)
+      .select('title subtitle executiveSummary investorScore globalRank totalBuilders pointsToTopFive trendTier regionalFocus createdAt')
+      .lean(),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / normalizedLimit));
+
+  return {
+    items: rows,
+    pagination: {
+      page: normalizedPage,
+      limit: normalizedLimit,
+      total,
+      totalPages,
+      hasNextPage: normalizedPage < totalPages,
+      hasPrevPage: normalizedPage > 1,
+    },
+  };
+}
+
 async function getIdeaLeaderboard({ page = 1, limit = 25 }) {
   const normalizedPage = Math.max(1, Number(page) || 1);
   const normalizedLimit = Math.max(1, Math.min(50, Number(limit) || 25));
@@ -373,5 +403,6 @@ async function getIdeaLeaderboard({ page = 1, limit = 25 }) {
 module.exports = {
   createIdeaReport,
   getIdeaReportById,
+  listUserIdeaReports,
   getIdeaLeaderboard,
 };
