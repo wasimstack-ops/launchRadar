@@ -183,6 +183,7 @@ function ListingsPage() {
   const [ideaSubmitError, setIdeaSubmitError] = useState('');
   const [showIdeaPrompt, setShowIdeaPrompt] = useState(false);
   const [submitAfterAuth, setSubmitAfterAuth] = useState(false);
+  const [launchFormAfterAuth, setLaunchFormAfterAuth] = useState(false);
 
   const [topics, setTopics] = useState([]);
   const [topToday, setTopToday] = useState([]);
@@ -204,6 +205,12 @@ function ListingsPage() {
   const [carouselPaused, setCarouselPaused] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const ideaInputRef = useRef(null);
+
+  const focusIdeaComposer = () => {
+    if (!ideaInputRef.current) return;
+    ideaInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ideaInputRef.current.focus();
+  };
 
   useEffect(() => {
     const activeIdea = HERO_IDEA_EXAMPLES[ideaExampleIndex] || '';
@@ -231,9 +238,17 @@ function ListingsPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('compose') === '1' && ideaInputRef.current) {
-      ideaInputRef.current.focus();
+      window.setTimeout(() => {
+        focusIdeaComposer();
+      }, 0);
     }
   }, [location.search]);
+
+  useEffect(() => {
+    const handleComposeFocus = () => focusIdeaComposer();
+    window.addEventListener('wayb-focus-compose', handleComposeFocus);
+    return () => window.removeEventListener('wayb-focus-compose', handleComposeFocus);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -402,6 +417,16 @@ function ListingsPage() {
     setShowAuthPrompt(true);
   };
 
+  const handleLaunchCta = () => {
+    setSubmitAfterAuth(false);
+    setLaunchFormAfterAuth(true);
+    if (localStorage.getItem('userToken')) {
+      navigate('/submit');
+      return;
+    }
+    setShowAuthPrompt(true);
+  };
+
   return (
     <div>
       <Helmet>
@@ -469,7 +494,7 @@ function ListingsPage() {
             <button
               type="button"
               className="btn btn-ghost"
-              onClick={handleHeroSubmit}
+              onClick={handleLaunchCta}
             >
               <Rocket size={15} /> Submit a Launch
             </button>
@@ -791,9 +816,15 @@ function ListingsPage() {
         onClose={() => {
           setShowAuthPrompt(false);
           setSubmitAfterAuth(false);
+          setLaunchFormAfterAuth(false);
         }}
         onSuccess={() => {
           setShowAuthPrompt(false);
+          if (launchFormAfterAuth) {
+            setLaunchFormAfterAuth(false);
+            navigate('/submit');
+            return;
+          }
           if (submitAfterAuth && (ideaInput || sessionStorage.getItem('pendingIdeaSubmission'))) {
             const idea = String(ideaInput || sessionStorage.getItem('pendingIdeaSubmission') || '').trim();
             if (idea) {
@@ -807,12 +838,17 @@ function ListingsPage() {
           navigate('/?compose=1');
         }}
         onGoogleContinue={() => {
-          if (ideaInput.trim()) {
+          const shouldResumeIdea = submitAfterAuth && ideaInput.trim();
+          const nextPath = launchFormAfterAuth ? '/submit' : (shouldResumeIdea ? '/?resumeIdea=1' : '/?compose=1');
+          if (shouldResumeIdea) {
             sessionStorage.setItem('pendingIdeaSubmission', ideaInput.trim());
             setSubmitAfterAuth(false);
           }
+          if (launchFormAfterAuth) {
+            setLaunchFormAfterAuth(false);
+          }
           setShowAuthPrompt(false);
-          navigate(`/auth?next=${encodeURIComponent('/?resumeIdea=1')}`);
+          navigate(`/auth?next=${encodeURIComponent(nextPath)}`);
         }}
       />
       {showIdeaPrompt && (

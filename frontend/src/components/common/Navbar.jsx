@@ -72,7 +72,7 @@ function Navbar({ searchTerm, onSearchChange }) {
   const handleSubmitClick = (event) => {
     event.preventDefault();
     if (currentUser) {
-      navigate('/?compose=1');
+      navigate('/submit');
       return;
     }
     setShowAuthPrompt(true);
@@ -163,11 +163,11 @@ function Navbar({ searchTerm, onSearchChange }) {
         onClose={() => setShowAuthPrompt(false)}
         onSuccess={() => {
           setShowAuthPrompt(false);
-          navigate('/?compose=1');
+          navigate('/submit');
         }}
         onGoogleContinue={() => {
           setShowAuthPrompt(false);
-          navigate(`/auth?next=${encodeURIComponent('/?compose=1')}`);
+          navigate(`/auth?next=${encodeURIComponent('/submit')}`);
         }}
       />
     </>
