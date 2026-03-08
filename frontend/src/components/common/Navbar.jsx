@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Boxes, LogOut, Moon, Rocket, Search, Sun } from 'lucide-react';
+import { Boxes, LogOut, Menu, Moon, Rocket, Search, Sun, X } from 'lucide-react';
 import api from '../../api/client';
 import AuthPromptModal from './AuthPromptModal';
 
@@ -19,6 +19,7 @@ function Navbar({ searchTerm, onSearchChange }) {
   const [isLight, setIsLight] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const loadCurrentUser = () => {
     const token = localStorage.getItem('userToken');
@@ -55,6 +56,10 @@ function Navbar({ searchTerm, onSearchChange }) {
     return () => window.removeEventListener('auth-changed', handleAuthChanged);
   }, []);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, location.search]);
+
   const toggleTheme = () => {
     const next = !isLight;
     setIsLight(next);
@@ -83,80 +88,126 @@ function Navbar({ searchTerm, onSearchChange }) {
     <>
       <nav className="site-nav">
         <div className="nav-inner">
-        {/* Logo */}
-        <Link to="/" className="nav-logo">
-          <span className="nav-logo-icon">
-            <Boxes size={14} />
-          </span>
-          WAYB
-        </Link>
+          {/* Logo */}
+          <Link to="/" className="nav-logo">
+            <span className="nav-logo-icon">
+              <Boxes size={14} />
+            </span>
+            WAYB
+          </Link>
 
-        {/* Search (optional, shown when prop provided) */}
-        {onSearchChange !== undefined && (
-          <div className="nav-search-wrap">
-            <Search size={15} className="nav-search-icon" />
-            <input
-              type="text"
-              className="nav-search"
-              placeholder="Search products..."
-              value={searchTerm || ''}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
+          {/* Search (optional, shown when prop provided) */}
+          {onSearchChange !== undefined && (
+            <div className="nav-search-wrap">
+              <Search size={15} className="nav-search-icon" />
+              <input
+                type="text"
+                className="nav-search"
+                placeholder="Search products..."
+                value={searchTerm || ''}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Nav Links */}
+          <div className="nav-links">
+            <Link to="/" className={`nav-link${isActive('/') ? ' active' : ''}`}>
+              Products
+            </Link>
+            <Link to="/crypto" className={`nav-link${isActive('/crypto') ? ' active' : ''}`}>
+              Crypto
+            </Link>
+            <Link to="/agents" className={`nav-link${isActive('/agents') ? ' active' : ''}`}>
+              Agents
+            </Link>
+            <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
+              Airdrops
+            </Link>
           </div>
-        )}
 
-        {/* Nav Links */}
-        <div className="nav-links">
-          <Link to="/" className={`nav-link${isActive('/') ? ' active' : ''}`}>
-            Products
-          </Link>
-          <Link to="/crypto" className={`nav-link${isActive('/crypto') ? ' active' : ''}`}>
-            Crypto
-          </Link>
-          <Link to="/agents" className={`nav-link${isActive('/agents') ? ' active' : ''}`}>
-            Agents
-          </Link>
-          <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
-            Airdrops
-          </Link>
-        </div>
-
-        {/* Actions */}
+          {/* Actions */}
           <div className="nav-actions">
             <Link to="/submit" className="nav-submit-btn" onClick={handleSubmitClick}>
-            <Rocket size={14} />
-            Submit
-          </Link>
+              <Rocket size={14} />
+              Submit
+            </Link>
 
-          {currentUser ? (
-            <div className="user-chip">
-              <span className="user-avatar">
-                {getInitials(currentUser.name || currentUser.email)}
-              </span>
-              <span className="user-name">
-                {currentUser.name || currentUser.email}
-              </span>
-              <button
-                type="button"
-                className="user-logout"
-                onClick={handleLogout}
-                title="Sign out"
-              >
-                <LogOut size={13} />
-              </button>
-            </div>
-          ) : null}
+            {currentUser ? (
+              <div className="user-chip">
+                <span className="user-avatar">
+                  {getInitials(currentUser.name || currentUser.email)}
+                </span>
+                <span className="user-name">
+                  {currentUser.name || currentUser.email}
+                </span>
+                <button
+                  type="button"
+                  className="user-logout"
+                  onClick={handleLogout}
+                  title="Sign out"
+                >
+                  <LogOut size={13} />
+                </button>
+              </div>
+            ) : null}
 
-          <button
-            type="button"
-            className="theme-btn"
-            onClick={toggleTheme}
-            title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            {isLight ? <Moon size={15} /> : <Sun size={15} />}
-          </button>
+            <button
+              type="button"
+              className="theme-btn"
+              onClick={toggleTheme}
+              title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {isLight ? <Moon size={15} /> : <Sun size={15} />}
+            </button>
+
+            <button
+              type="button"
+              className="nav-hamburger"
+              onClick={() => setMobileOpen((current) => !current)}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
         </div>
+        {mobileOpen ? (
+          <div className="nav-mobile-panel">
+            <div className="nav-mobile-links">
+              <Link to="/" className={`nav-link${isActive('/') ? ' active' : ''}`}>
+                Products
+              </Link>
+              <Link to="/crypto" className={`nav-link${isActive('/crypto') ? ' active' : ''}`}>
+                Crypto
+              </Link>
+              <Link to="/agents" className={`nav-link${isActive('/agents') ? ' active' : ''}`}>
+                Agents
+              </Link>
+              <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
+                Airdrops
+              </Link>
+            </div>
+            {currentUser ? (
+              <div className="nav-mobile-user">
+                <span className="user-avatar">
+                  {getInitials(currentUser.name || currentUser.email)}
+                </span>
+                <span className="nav-mobile-user-name">
+                  {currentUser.name || currentUser.email}
+                </span>
+                <button
+                  type="button"
+                  className="user-logout"
+                  onClick={handleLogout}
+                  title="Sign out"
+                >
+                  <LogOut size={13} />
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </nav>
       <AuthPromptModal
         open={showAuthPrompt}
