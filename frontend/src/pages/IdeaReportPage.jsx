@@ -46,6 +46,8 @@ function IdeaReportPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const totalBuilders = Math.max(1, Number(report?.totalBuilders || 0));
 
   useEffect(() => {
@@ -60,6 +62,28 @@ function IdeaReportPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const downloadDealMemo = async () => {
+    if (!id) return;
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      const response = await api.get(`/api/idea-reports/${id}/pdf`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `deal-memo-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setDownloadError(requestError?.response?.data?.message || 'Unable to download the deal memo right now.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div>
       <Helmet>
@@ -72,18 +96,25 @@ function IdeaReportPage() {
       <main className="idea-report-shell">
         <div className="idea-report-inner">
           <div className="idea-report-topbar">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-              <ArrowLeft size={14} /> Go Back to Dashboard
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/workspace')}>
+              <ArrowLeft size={14} /> Back to Workspace
             </button>
             <div className="idea-report-topbar-actions">
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/workspace')}>
                 <BriefcaseBusiness size={14} /> My Workspace
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/submit')}>
+                Submit a Launch <ChevronRight size={14} />
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={downloadDealMemo} disabled={downloading}>
+                {downloading ? 'Preparing...' : 'Download Deal Memo'}
               </button>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/leaderboard')}>
                 View Leaderboard <ChevronRight size={14} />
               </button>
             </div>
           </div>
+          {downloadError ? <p className="form-error" style={{ marginBottom: 12 }}>{downloadError}</p> : null}
 
           {loading && (
             <div className="idea-report-loading">
@@ -267,4 +298,3 @@ function IdeaReportPage() {
 }
 
 export default IdeaReportPage;
-

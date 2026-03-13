@@ -53,56 +53,66 @@ function ListingsTable({ refreshSignal, onEdit, onDeleted }) {
 
   return (
     <section>
-      <h2 style={{ marginBottom: 12 }}>Listings</h2>
+      <h2 className="admin-section-title">Listings</h2>
 
       {loading ? <p>Loading...</p> : null}
-      {error ? <p style={{ color: '#b00020' }}>{error}</p> : null}
+      {error ? <p className="admin-alert error">{error}</p> : null}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Title</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Category</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedListings.map((listing) => (
-            <tr key={listing._id}>
-              <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{listing.title}</td>
-              <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{listing.category}</td>
-              <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>
-                <button type="button" onClick={() => onEdit && onEdit(listing)} style={{ marginRight: 8 }}>
-                  Edit
-                </button>
-                <button type="button" onClick={() => handleDelete(listing._id)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {!loading && listings.length === 0 ? (
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={3} style={{ padding: '10px 6px' }}>
-                No listings found.
-              </td>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Actions</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {paginatedListings.map((listing) => (
+              <tr key={listing._id}>
+                <td>{listing.title}</td>
+                <td>{listing.category}</td>
+                <td>
+                  <div className="admin-actions">
+                    <button type="button" className="admin-btn" onClick={() => onEdit && onEdit(listing)}>
+                      Edit
+                    </button>
+                    <button type="button" className="admin-btn ghost" onClick={() => handleDelete(listing._id)}>
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {!loading && listings.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="muted">
+                  No listings found.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
 
       {!loading && listings.length > 0 ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <div className="admin-pagination">
           <p style={{ margin: 0 }}>
             Page {safePage} of {totalPages}
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="admin-btn"
+              disabled={safePage <= 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+            >
               Prev
             </button>
             <button
               type="button"
+              className="admin-btn"
               disabled={safePage >= totalPages}
               onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
             >

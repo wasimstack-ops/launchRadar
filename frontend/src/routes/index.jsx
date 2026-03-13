@@ -16,13 +16,22 @@ import WorkspacePage from '../pages/WorkspacePage';
 import CommunityPage from '../pages/CommunityPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsOfServicePage from '../pages/TermsOfServicePage';
+import UpgradePage from '../pages/UpgradePage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import RedirectIfAuthenticated from '../components/common/RedirectIfAuthenticated';
 
 function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ListingsPage />} />
+        <Route
+          path="/"
+          element={
+            <RedirectIfAuthenticated>
+              <ListingsPage />
+            </RedirectIfAuthenticated>
+          }
+        />
         <Route path="/crypto" element={<CryptoPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/airdrops" element={<AirdropsPage />} />
@@ -32,7 +41,14 @@ function AppRoutes() {
         <Route path="/category/:slug" element={<CategoryProductsPage />} />
         <Route path="/listing/:id" element={<ListingFormPage />} />
 
-        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/auth"
+          element={
+            <RedirectIfAuthenticated>
+              <AuthPage />
+            </RedirectIfAuthenticated>
+          }
+        />
         <Route
           path="/me"
           element={
@@ -70,6 +86,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute mode="user">
               <WorkspacePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/upgrade"
+          element={
+            <ProtectedRoute mode="user">
+              <UpgradePage />
             </ProtectedRoute>
           }
         />

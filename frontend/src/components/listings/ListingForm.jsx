@@ -71,10 +71,11 @@ function ListingForm({ editingListing, onSaved, onCancelEdit }) {
 
   return (
     <section style={{ marginBottom: 24 }}>
-      <h2 style={{ marginBottom: 12 }}>{editingListing ? 'Edit Listing' : 'Create Listing'}</h2>
+      <h2 className="admin-section-title">{editingListing ? 'Edit Listing' : 'Create Listing'}</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 10 }}>
-        <input name="title" placeholder="Title" value={form.title} onChange={handleChange} required />
+        <input className="input" name="title" placeholder="Title" value={form.title} onChange={handleChange} required />
         <textarea
+          className="input"
           name="description"
           placeholder="Description"
           value={form.description}
@@ -82,24 +83,33 @@ function ListingForm({ editingListing, onSaved, onCancelEdit }) {
           rows={4}
           required
         />
-        <input name="category" placeholder="Category" value={form.category} onChange={handleChange} required />
-        <input name="link" placeholder="Link" value={form.link} onChange={handleChange} required />
         <input
+          className="input"
+          name="category"
+          placeholder="Category"
+          value={form.category}
+          onChange={handleChange}
+          required
+        />
+        <input className="input" name="link" placeholder="Link" value={form.link} onChange={handleChange} required />
+        <input
+          className="input"
           name="tags"
           placeholder="Tags (comma separated)"
           value={form.tags}
           onChange={handleChange}
         />
 
-        {error ? <p style={{ color: '#b00020', margin: 0 }}>{error}</p> : null}
+        {error ? <p className="form-error" style={{ margin: 0 }}>{error}</p> : null}
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" disabled={loading}>
+        <div className="admin-actions">
+          <button type="submit" className="admin-btn primary" disabled={loading}>
             {loading ? 'Saving...' : editingListing ? 'Update' : 'Create'}
           </button>
           {editingListing ? (
             <button
               type="button"
+              className="admin-btn ghost"
               onClick={() => {
                 setForm(initialForm);
                 if (onCancelEdit) onCancelEdit();

@@ -57,54 +57,53 @@ function AdminSubscribersTable() {
 
   return (
     <section>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-        <label htmlFor="sub-active-filter" style={{ fontWeight: 600 }}>Status:</label>
-        <select
-          id="sub-active-filter"
-          value={activeFilter}
-          onChange={(e) => {
-            setActiveFilter(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="all">All</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <span style={{ color: '#6b7280', fontSize: 14 }}>Total: {pagination.total}</span>
+      <div className="admin-section-head">
+        <div className="admin-actions">
+          <label htmlFor="sub-active-filter" style={{ fontWeight: 600 }}>Status:</label>
+          <select
+            id="sub-active-filter"
+            className="input-select"
+            value={activeFilter}
+            onChange={(e) => {
+              setActiveFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="all">All</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+        <span className="admin-section-subtitle">Total: {pagination.total}</span>
       </div>
 
-      {error ? <p className="form-error" style={{ marginBottom: 12 }}>{error}</p> : null}
+      {error ? <p className="admin-alert error">{error}</p> : null}
 
       {loading ? (
         <p>Loading subscribers...</p>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+        <div className="admin-table-wrap compact">
+          <table className="admin-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e5e7eb' }}>Email</th>
-                <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e5e7eb' }}>Frequency</th>
-                <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e5e7eb' }}>Status</th>
-                <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e5e7eb' }}>Created</th>
+                <th>Email</th>
+                <th>Frequency</th>
+                <th>Status</th>
+                <th>Created</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ padding: '14px 8px', color: '#6b7280' }}>No subscribers found.</td>
+                  <td colSpan={4} className="muted">No subscribers found.</td>
                 </tr>
               ) : (
                 rows.map((item) => (
                   <tr key={item._id}>
-                    <td style={{ padding: '10px 8px', borderBottom: '1px solid #f3f4f6' }}>{item.email}</td>
-                    <td style={{ padding: '10px 8px', borderBottom: '1px solid #f3f4f6' }}>{item.frequency || 'weekly'}</td>
-                    <td style={{ padding: '10px 8px', borderBottom: '1px solid #f3f4f6' }}>
-                      {item.isActive ? 'Active' : 'Inactive'}
-                    </td>
-                    <td style={{ padding: '10px 8px', borderBottom: '1px solid #f3f4f6' }}>
-                      {item.createdAt ? new Date(item.createdAt).toLocaleString() : '-'}
-                    </td>
+                    <td>{item.email}</td>
+                    <td>{item.frequency || 'weekly'}</td>
+                    <td>{item.isActive ? 'Active' : 'Inactive'}</td>
+                    <td>{item.createdAt ? new Date(item.createdAt).toLocaleString() : '-'}</td>
                   </tr>
                 ))
               )}
@@ -113,18 +112,21 @@ function AdminSubscribersTable() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
-        <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1 || loading}>
-          Prev
-        </button>
-        <span style={{ fontSize: 14 }}>Page {page} of {totalPages}</span>
-        <button
-          type="button"
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page >= totalPages || loading}
-        >
-          Next
-        </button>
+      <div className="admin-pagination">
+        <div className="admin-actions">
+          <button type="button" className="admin-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1 || loading}>
+            Prev
+          </button>
+          <span className="admin-section-subtitle">Page {page} of {totalPages}</span>
+          <button
+            type="button"
+            className="admin-btn"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || loading}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </section>
   );

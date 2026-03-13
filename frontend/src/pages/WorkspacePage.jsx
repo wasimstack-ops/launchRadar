@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, FileText, Home, Lock, MessageSquare, Plus, Rocket, Send, Sparkles, Trophy, Workflow, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, FileText, Home, MessageSquare, Plus, Rocket, Send, Trophy, Workflow } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
@@ -33,7 +33,12 @@ function WorkspacePage() {
   const [user, setUser] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState('');
   const [chatDraft, setChatDraft] = useState('');
-  const [showPlansModal, setShowPlansModal] = useState(false);
+  const [ideaError, setIdeaError] = useState('');
+  const [ideaSubmitting, setIdeaSubmitting] = useState(false);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState('');
+  const [downloadingId, setDownloadingId] = useState('');
+  const ideaPanelRef = useRef(null);
   const [reportState, setReportState] = useState({
     items: [],
     pagination: { page: 1, total: 0, totalPages: 1 },
@@ -44,30 +49,53 @@ function WorkspacePage() {
     setLoading(true);
     setError('');
 
-    Promise.all([
-      api.get('/api/auth/me'),
-      api.get('/api/idea-reports/me/list?page=1&limit=12'),
-    ])
-      .then(([userResponse, reportsResponse]) => {
+    const loadInitial = async () => {
+      try {
+        const [userResponse, reportsResponse] = await Promise.all([
+          api.get('/api/auth/me'),
+          api.get('/api/idea-reports/me/list?page=1&limit=12'),
+        ]);
         if (!mounted) return;
         setUser(userResponse.data?.data || null);
         setReportState(reportsResponse.data?.data || {
           items: [],
           pagination: { page: 1, total: 0, totalPages: 1 },
         });
-      })
-      .catch((requestError) => {
+      } catch (requestError) {
         if (!mounted) return;
         setError(requestError?.response?.data?.message || 'Unable to load your workspace right now.');
-      })
-      .finally(() => {
+      } finally {
         if (mounted) setLoading(false);
-      });
+      }
+    };
+
+    loadInitial();
 
     return () => {
       mounted = false;
     };
   }, []);
+
+  const loadReports = async (page = 1) => {
+    setReportsLoading(true);
+    setReportsError('');
+    try {
+      const response = await api.get(`/api/idea-reports/me/list?page=${page}&limit=12`);
+      const nextState = response.data?.data || {
+        items: [],
+        pagination: { page: 1, total: 0, totalPages: 1 },
+      };
+      setReportState(nextState);
+      const nextItems = Array.isArray(nextState.items) ? nextState.items : [];
+      if (!nextItems.find((item) => String(item._id) === String(selectedReportId))) {
+        setSelectedReportId(nextItems[0] ? String(nextItems[0]._id) : '');
+      }
+    } catch (requestError) {
+      setReportsError(requestError?.response?.data?.message || 'Unable to load your saved analyses right now.');
+    } finally {
+      setReportsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedReportId) return;
@@ -101,61 +129,56 @@ function WorkspacePage() {
 
   const reports = Array.isArray(reportState.items) ? reportState.items : [];
   const selectedReport = reports.find((item) => String(item._id) === String(selectedReportId)) || reports[0] || null;
-  const promptChips = [
-    'Is this idea worth building?',
-    'How can I improve this score?',
-    'What MVP should I launch first?',
-    'What would investors challenge?',
-    'Give me a go-to-market plan',
-  ];
-  const plans = [
-    {
-      name: 'Free',
-      price: '0',
-      tagline: 'Start validating one idea at a time',
-      cta: 'Start Free',
-      features: [
-        'Score one idea at a time',
-        'Chat with your latest analysis',
-        'Basic founder feedback',
-        'Limited follow-up questions',
-        'View investor score and readiness metrics',
-        'Access leaderboard ranking',
-        'Submit launches manually',
-      ],
-    },
-    {
-      name: 'Pro',
-      price: '2,599',
-      tagline: 'Sharpen every report into a real execution plan',
-      cta: 'Upgrade to Pro',
-      recommended: true,
-      features: [
-        'Unlimited report chat',
-        'Improve your score with guided recommendations',
-        'Compare multiple ideas and directions',
-        'Deeper investor memo refinement',
-        'Go-to-market and positioning help',
-        'Saved conversation history per report',
-        'Faster analysis and priority access',
-      ],
-    },
-    {
-      name: 'Business',
-      price: 'Contact',
-      tagline: 'Standardize product intelligence across your team',
-      cta: 'Add Business Workspace',
-      features: [
-        'Shared workspace for teams',
-        'Multi-user access and collaboration',
-        'Team-wide product evaluation history',
-        'Standardized scoring across ideas',
-        'Investor memo workflows for internal reviews',
-        'Launch planning across multiple products',
-        'Priority support and advanced controls',
-      ],
-    },
-  ];
+  const openIdeaPanel = () => {
+    ideaPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleIdeaSubmit = async (event) => {
+    event.preventDefault();
+    const idea = String(chatDraft || '').trim();
+    if (!idea) {
+      setIdeaError('Tell us what you are building before you submit.');
+      return;
+    }
+
+    setIdeaSubmitting(true);
+    setIdeaError('');
+    try {
+      const response = await api.post('/api/idea-reports', { idea });
+      const reportId = response.data?.data?._id;
+      if (!reportId) {
+        throw new Error('Idea report was created without an id');
+      }
+      setChatDraft('');
+      await loadReports(1);
+      navigate(`/idea-report/${reportId}`);
+    } catch (requestError) {
+      setIdeaError(requestError?.response?.data?.message || 'We could not evaluate your idea right now.');
+    } finally {
+      setIdeaSubmitting(false);
+    }
+  };
+
+  const downloadDealMemo = async (reportId) => {
+    if (!reportId) return;
+    setDownloadingId(reportId);
+    try {
+      const response = await api.get(`/api/idea-reports/${reportId}/pdf`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `deal-memo-${reportId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setReportsError(requestError?.response?.data?.message || 'Unable to download this deal memo right now.');
+    } finally {
+      setDownloadingId('');
+    }
+  };
 
   return (
     <div>
@@ -185,8 +208,8 @@ function WorkspacePage() {
                 <button type="button" className="workspace-sidebar-link active">
                   <Home size={18} /> Workspace
                 </button>
-                <button type="button" className="workspace-sidebar-link" onClick={() => navigate('/')}>
-                  <Plus size={18} /> New Analysis
+                <button type="button" className="workspace-sidebar-link" onClick={openIdeaPanel}>
+                  <Plus size={18} /> Idea Analysis
                 </button>
                 <button type="button" className="workspace-sidebar-link" onClick={() => navigate('/leaderboard')}>
                   <Trophy size={18} /> Leaderboard
@@ -194,31 +217,10 @@ function WorkspacePage() {
                 <button type="button" className="workspace-sidebar-link" onClick={() => navigate('/submit')}>
                   <Rocket size={18} /> Submit a Launch
                 </button>
-              </nav>
-
-              <div className="workspace-sidebar-block">
-                <p className="workspace-sidebar-label">Recent Models</p>
-                <p className="workspace-sidebar-empty">No history yet</p>
-              </div>
-
-              <div className="workspace-pricing-card">
-                <div className="workspace-pricing-head">
-                  <span>Unlock Pro</span>
-                  <Sparkles size={14} />
-                </div>
-                <p className="workspace-pricing-copy">
-                  Turn every score into an execution plan with deeper founder intelligence.
-                </p>
-                <ul className="workspace-pricing-list">
-                  <li><span className="workspace-pricing-dot" /> Unlimited report chat <Lock size={14} /></li>
-                  <li><span className="workspace-pricing-dot" /> Score improvement guidance <Lock size={14} /></li>
-                  <li><span className="workspace-pricing-dot" /> Investor memo refinement <Lock size={14} /></li>
-                  <li><span className="workspace-pricing-dot" /> Go-to-market strategy help <Lock size={14} /></li>
-                </ul>
-                <button type="button" className="workspace-upgrade-button" onClick={() => setShowPlansModal(true)}>
-                  Unlock Founder Pro
+                <button type="button" className="workspace-sidebar-link" onClick={() => navigate('/me')}>
+                  <FileText size={18} /> Profile
                 </button>
-              </div>
+              </nav>
             </aside>
 
             <section className="workspace-main">
@@ -230,8 +232,17 @@ function WorkspacePage() {
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
                     Home
                   </button>
-                  <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/submit')}>
-                    <Plus size={14} /> Submit a Launch
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={openIdeaPanel}>
+                    Idea analysis
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/submit')}>
+                    Submit a Launch
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/leaderboard')}>
+                    Leaderboard
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/me')}>
+                    Profile
                   </button>
                 </div>
               </div>
@@ -243,12 +254,12 @@ function WorkspacePage() {
                     {`Good ${new Date().getHours() >= 12 ? 'afternoon' : 'morning'}, ${user?.name || 'Founder'}.`}
                   </h1>
                   <p className="workspace-subtitle">
-                    Revisit scored ideas, pressure-test your thesis, and turn every report into a clearer product decision.
+                    Review your previous analyses, sharpen your thesis, and keep every idea investor-ready.
                   </p>
                 </div>
                 <div className="workspace-hero-actions">
-                  <button type="button" className="workspace-action-primary" onClick={() => navigate('/')}>
-                    <Workflow size={16} /> New Analysis
+                  <button type="button" className="workspace-action-primary" onClick={openIdeaPanel}>
+                    <Workflow size={16} /> Idea Analysis
                   </button>
                   <button type="button" className="workspace-action-secondary" onClick={() => navigate('/leaderboard')}>
                     <Trophy size={16} /> Leaderboard
@@ -291,67 +302,118 @@ function WorkspacePage() {
                     </article>
                   </section>
 
-                  <section className="workspace-panel">
+                  <section className="workspace-panel" ref={ideaPanelRef}>
                     <div className="workspace-panel-head">
-                      <h2><MessageSquare size={16} /> Intelligence Workspace</h2>
+                      <h2><MessageSquare size={16} /> Idea analysis</h2>
+                      <span>What are you building?</span>
                     </div>
 
-                    {reports.length > 0 ? (
-                      <div className="workspace-chat-shell">
-                        <div className="workspace-chat-stage">
-                          <div className="workspace-chat-empty">
-                            <h3>How can I help you?</h3>
-                            <p>
-                              Ask about weaknesses, investor risk, MVP scope, positioning, or launch strategy. This chat is designed to work against your latest scored analysis.
-                            </p>
-                          </div>
+                    <div className="workspace-chat-shell">
+                      <form className="workspace-chat-composer" onSubmit={handleIdeaSubmit}>
+                        <textarea
+                          className="workspace-chat-input"
+                          placeholder="Share your idea in one or two sentences..."
+                          value={chatDraft}
+                          onChange={(event) => {
+                            setChatDraft(event.target.value);
+                            if (ideaError) setIdeaError('');
+                          }}
+                        />
+                        <button type="submit" className="workspace-chat-send" disabled={ideaSubmitting}>
+                          {ideaSubmitting ? '...' : <Send size={16} />}
+                        </button>
+                      </form>
+                      {ideaError ? <p className="form-error" style={{ marginTop: 10 }}>{ideaError}</p> : null}
+                    </div>
+                  </section>
 
-                          <form
-                            className="workspace-chat-composer"
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              setShowPlansModal(true);
-                            }}
-                          >
-                            <textarea
-                              className="workspace-chat-input"
-                              placeholder={selectedReport
-                                ? `Ask about ${selectedReport.title || 'this report'}...`
-                                : 'Choose a saved report to start chatting...'}
-                              value={chatDraft}
-                              onChange={(event) => setChatDraft(event.target.value)}
-                            />
-                            <button
-                              type="submit"
-                              className="workspace-chat-send"
-                              title="View chat plans"
-                            >
-                              <Send size={16} />
-                            </button>
-                          </form>
+                  <section className="workspace-panel">
+                    <div className="workspace-panel-head">
+                      <h2><FileText size={16} /> Your analyses</h2>
+                      <span>{reportState.pagination?.total || reports.length} total</span>
+                    </div>
 
-                          <div className="workspace-chat-prompts">
-                            {promptChips.map((prompt) => (
-                              <button
-                                key={prompt}
-                                type="button"
-                                className="workspace-chat-prompt"
-                                onClick={() => setChatDraft(prompt)}
-                              >
-                                {prompt}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                    {reportsError ? <p className="form-error" style={{ margin: 16 }}>{reportsError}</p> : null}
+                    {reportsLoading ? (
+                      <div className="workspace-loading" style={{ padding: 16 }}>
+                        <div className="skeleton" style={{ height: 64, borderRadius: 16, marginBottom: 12 }} />
+                        <div className="skeleton" style={{ height: 64, borderRadius: 16 }} />
                       </div>
                     ) : (
-                      <div className="workspace-empty">
-                        <p>No submissions yet.</p>
-                        <button type="button" className="btn btn-primary" onClick={() => navigate('/')}>
-                          Initialize Analysis
-                        </button>
+                      <div className="workspace-report-list">
+                        {reports.length === 0 ? (
+                          <div className="workspace-empty">
+                            <p>No analyses yet.</p>
+                            <button type="button" className="btn btn-primary" onClick={openIdeaPanel}>
+                              Start your first analysis
+                            </button>
+                          </div>
+                        ) : (
+                          reports.map((report) => (
+                            <div
+                              key={report._id}
+                              role="button"
+                              tabIndex={0}
+                              className={`workspace-report-item${String(report._id) === String(selectedReportId) ? ' active' : ''}`}
+                              onClick={() => setSelectedReportId(String(report._id))}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  setSelectedReportId(String(report._id));
+                                }
+                              }}
+                            >
+                              <div className="workspace-report-main">
+                                <p className="workspace-report-title">{report.title || 'Untitled idea'}</p>
+                                <p className="workspace-report-meta">
+                                  {formatDate(report.createdAt)} · Score {report.investorScore || '-'}
+                                </p>
+                              </div>
+                              <div className="workspace-report-actions">
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => navigate(`/idea-report/${report._id}`)}
+                                >
+                                  Open
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => downloadDealMemo(report._id)}
+                                  disabled={downloadingId === report._id}
+                                >
+                                  {downloadingId === report._id ? 'Preparing...' : 'Download PDF'}
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     )}
+
+                    {reportState.pagination?.totalPages > 1 ? (
+                      <div className="workspace-pagination">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          disabled={reportState.pagination.page <= 1 || reportsLoading}
+                          onClick={() => loadReports(reportState.pagination.page - 1)}
+                        >
+                          Previous
+                        </button>
+                        <span className="workspace-pagination-label">
+                          Page {reportState.pagination.page} of {reportState.pagination.totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          disabled={reportState.pagination.page >= reportState.pagination.totalPages || reportsLoading}
+                          onClick={() => loadReports(reportState.pagination.page + 1)}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    ) : null}
                   </section>
                 </>
               )}
@@ -359,69 +421,6 @@ function WorkspacePage() {
           </div>
         </div>
       </main>
-
-      {showPlansModal ? (
-        <div className="plans-modal-backdrop" onClick={() => setShowPlansModal(false)}>
-          <div className="plans-modal" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="plans-modal-close"
-              onClick={() => setShowPlansModal(false)}
-              aria-label="Close plans"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="plans-modal-head">
-              <span className="plans-modal-kicker">Upgrade your plan</span>
-              <h2>Choose the right plan for building with conviction.</h2>
-              <p>
-                Unlock report-aware chat, score improvement guidance, and deeper founder intelligence directly inside your workspace.
-              </p>
-            </div>
-
-            <div className="plans-grid">
-              {plans.map((plan) => (
-                <article
-                  key={plan.name}
-                  className={`plan-card${plan.recommended ? ' recommended' : ''}`}
-                >
-                  <div className="plan-card-head">
-                    <div>
-                      <h3>{plan.name}</h3>
-                      <p>{plan.tagline}</p>
-                    </div>
-                    {plan.recommended ? <span className="plan-badge">Recommended</span> : null}
-                  </div>
-
-                  <div className="plan-price-row">
-                    <strong>{plan.price === 'Contact' ? 'Custom' : `INR ${plan.price}`}</strong>
-                    <span>{plan.price === 'Contact' ? 'Custom pricing' : '/ month'}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={`plan-cta${plan.recommended ? ' recommended' : ''}`}
-                  >
-                    {plan.cta}
-                  </button>
-
-                  <div className="plan-divider" />
-
-                  <ul className="plan-feature-list">
-                    {plan.features.map((feature) => (
-                      <li key={feature}>
-                        <Check size={15} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <Footer />
     </div>

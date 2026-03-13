@@ -453,13 +453,13 @@ function ListingsPage() {
         <div className="hero-content">
           <span className="hero-badge">
             <span className="hero-live-dot" />
-            Live &mdash; AI &amp; Startup Intelligence
+            Live - WAYB | What are you building?
           </span>
           <h1 className="hero-title">
             What are you building?
           </h1>
           <p className="hero-sub">
-            Get VC/Investor level scoring on your business idea and get featured and funded if you rank in the Top 5 leaderboard on wayb.
+            Builders, this is your chance to share what are you building and get featured on the leaderboard to win grants and bounties, move to the top 5 list and get the edge.
           </p>
           <div className="hero-idea-box" aria-label="Example startup ideas">
             <div className="hero-idea-display">

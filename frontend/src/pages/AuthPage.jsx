@@ -9,7 +9,8 @@ function AuthPage() {
   const buttonRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const nextPath = new URLSearchParams(location.search).get('next') || '/';
+  const requestedNextPath = new URLSearchParams(location.search).get('next');
+  const nextPath = requestedNextPath && requestedNextPath !== '/' ? requestedNextPath : '/workspace';
 
   useEffect(() => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;

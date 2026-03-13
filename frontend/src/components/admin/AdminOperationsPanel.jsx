@@ -144,17 +144,9 @@ async function runApiCall(method, endpoint, payload = {}) {
 
 function statCard(title, value) {
   return (
-    <div
-      key={title}
-      style={{
-        border: '1px solid #94a3b8',
-        borderRadius: 10,
-        padding: 12,
-        background: '#f8fafc',
-      }}
-    >
-      <p style={{ margin: 0, fontSize: 13, color: '#334155', fontWeight: 600 }}>{title}</p>
-      <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 800, color: '#0f172a' }}>{value}</p>
+    <div key={title} className="admin-stat-card">
+      <p className="admin-stat-title">{title}</p>
+      <p className="admin-stat-value">{value}</p>
     </div>
   );
 }
@@ -378,112 +370,50 @@ function AdminOperationsPanel({ refreshSignal = 0 }) {
 
   return (
     <section>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div className="admin-section-head">
         <div>
-          <h2 style={{ margin: 0 }}>Operations Center</h2>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13 }}>
+          <h2 className="admin-section-title">Operations Center</h2>
+          <p className="admin-section-subtitle">
             Monitor ingestion pipelines, run manual sync jobs, and check recent fetch activity.
           </p>
         </div>
-        <button type="button" onClick={loadData} disabled={loading}>
+        <button type="button" className="admin-btn" onClick={loadData} disabled={loading}>
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
-      {notice ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: '#fffbeb',
-            border: '1px solid #f59e0b',
-            color: '#92400e',
-            fontSize: 13,
-          }}
-        >
-          {notice}
-        </div>
-      ) : null}
+      {notice ? <div className="admin-alert warn">{notice}</div> : null}
 
-      {error ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: '#fef2f2',
-            border: '1px solid #fca5a5',
-            color: '#b91c1c',
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="admin-alert error">{error}</div> : null}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-          gap: 10,
-          marginBottom: 16,
-        }}
-      >
+      <div className="admin-stats-grid">
         {statCards.map(([title, value]) => statCard(title, value))}
       </div>
 
-      <div
-        style={{
-          marginBottom: 16,
-          border: '1px solid #cbd5e1',
-          borderRadius: 12,
-          background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
-          padding: 14,
-          boxShadow: '0 6px 18px rgba(15, 23, 42, 0.06)',
-        }}
-      >
-        <h3 style={{ margin: '0 0 4px', fontWeight: 900, color: '#0f172a', fontSize: 18 }}>Manual Sync Jobs</h3>
-        <p style={{ margin: '0 0 12px', color: '#475569', fontSize: 13 }}>
+      <div className="admin-card" style={{ marginBottom: 16 }}>
+        <h3 className="admin-section-title" style={{ marginBottom: 4 }}>Manual Sync Jobs</h3>
+        <p className="admin-section-subtitle" style={{ marginBottom: 12 }}>
           Run data ingestion jobs on demand. Use this when you need immediate refresh outside cron.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+        <div className="admin-job-grid">
           {JOBS.map((job) => {
             const isRunning = Boolean(running[job.key]);
             const output = jobOutput[job.key];
             const disabledInCompatibility = compatibilityMode && !job.legacyEndpoint;
 
             return (
-              <div
-                key={job.key}
-                style={{
-                  border: '1px solid #d1d5db',
-                  borderRadius: 10,
-                  padding: 12,
-                  background: '#fff',
-                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)',
-                }}
-              >
-                <p style={{ margin: '0 0 8px', fontWeight: 800, color: '#0f172a' }}>{job.label}</p>
+              <div key={job.key} className="admin-job-card">
+                <p className="admin-job-label">{job.label}</p>
                 <button
                   type="button"
+                  className="admin-btn primary"
                   disabled={isRunning || disabledInCompatibility}
                   onClick={() => onRunJob(job)}
-                  style={{
-                    fontWeight: 800,
-                    color: '#ffffff',
-                    background: disabledInCompatibility ? '#94a3b8' : isRunning ? '#0f766e' : '#0ea5a4',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '8px 12px',
-                    minWidth: 92,
-                    cursor: isRunning || disabledInCompatibility ? 'not-allowed' : 'pointer',
-                  }}
                 >
                   {disabledInCompatibility ? 'Unavailable' : isRunning ? 'Running...' : 'Run'}
                 </button>
                 {output ? (
-                  <p style={{ margin: '10px 0 0', fontSize: 12, color: '#334155', lineHeight: 1.5 }}>
+                  <p className="admin-job-meta">
                     {formatDate(output.at)} | {output.summary}
                   </p>
                 ) : null}
@@ -494,41 +424,41 @@ function AdminOperationsPanel({ refreshSignal = 0 }) {
       </div>
 
       <div>
-        <h3 style={{ margin: '0 0 10px' }}>Recent Fetch Logs</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Job</th>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Status</th>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Inserted</th>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Fetched</th>
-              <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>When</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentLogs.map((log) => (
-              <tr key={log._id}>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>
-                  {log.jobName}
-                  {log.source ? ` (${log.source})` : ''}
-                </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
-                  {log.status}
-                </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{log.inserted || 0}</td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{log.fetched || 0}</td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{formatDate(log.createdAt)}</td>
-              </tr>
-            ))}
-            {recentLogs.length === 0 ? (
+        <h3 className="admin-section-title" style={{ marginBottom: 10 }}>Recent Fetch Logs</h3>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan={5} style={{ padding: '10px 6px' }}>
-                  No fetch logs yet.
-                </td>
+                <th>Job</th>
+                <th>Status</th>
+                <th>Inserted</th>
+                <th>Fetched</th>
+                <th>When</th>
               </tr>
-            ) : null}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {recentLogs.map((log) => (
+                <tr key={log._id}>
+                  <td>
+                    {log.jobName}
+                    {log.source ? ` (${log.source})` : ''}
+                  </td>
+                  <td style={{ textTransform: 'capitalize' }}>{log.status}</td>
+                  <td>{log.inserted || 0}</td>
+                  <td>{log.fetched || 0}</td>
+                  <td>{formatDate(log.createdAt)}</td>
+                </tr>
+              ))}
+              {recentLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No fetch logs yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

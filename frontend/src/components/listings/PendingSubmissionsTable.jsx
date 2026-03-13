@@ -96,113 +96,117 @@ function PendingSubmissionsTable({ onApproved }) {
 
   return (
     <section style={{ marginTop: 28 }}>
-      <h2 style={{ marginBottom: 12 }}>Submissions Moderation</h2>
+      <h2 className="admin-section-title">Submissions Moderation</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+      <div className="admin-filter-grid">
         <input
+          className="input"
           type="text"
           placeholder="Search by title, description, category, or email"
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+        <select className="input-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
           <option value="all">All Statuses</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
         </select>
-        <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+        <select className="input-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
           {CATEGORY_OPTIONS.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>
           ))}
         </select>
-        <select value={sortByDate} onChange={(event) => setSortByDate(event.target.value)}>
+        <select className="input-select" value={sortByDate} onChange={(event) => setSortByDate(event.target.value)}>
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
         </select>
       </div>
 
       {loading ? <p>Loading...</p> : null}
-      {error ? <p style={{ color: '#b00020' }}>{error}</p> : null}
+      {error ? <p className="admin-alert error">{error}</p> : null}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Title</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Category</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Status</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Submitted By</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Date</th>
-            <th style={{ textAlign: 'left', padding: '8px 6px', borderBottom: '1px solid #ddd' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedSubmissions.map((submission) => {
-            const isRowActing = actingId === submission._id;
+      <div className="admin-table-wrap compact">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Submitted By</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedSubmissions.map((submission) => {
+              const isRowActing = actingId === submission._id;
 
-            return (
-              <tr key={submission._id}>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{submission.title}</td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>{submission.category}</td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
-                  {submission.status}
-                </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>
-                  {getSubmitterLabel(submission)}
-                </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>
-                  {formatDate(submission.createdAt)}
-                </td>
-                <td style={{ padding: '8px 6px', borderBottom: '1px solid #eee' }}>
-                  {submission.status === 'pending' ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleAction(submission._id, 'approve')}
-                        disabled={isRowActing}
-                        style={{ marginRight: 8 }}
-                      >
-                        {isRowActing ? 'Processing...' : 'Approve'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAction(submission._id, 'reject')}
-                        disabled={isRowActing}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  ) : (
-                    <span style={{ color: '#64748b' }}>-</span>
-                  )}
+              return (
+                <tr key={submission._id}>
+                  <td>{submission.title}</td>
+                  <td>{submission.category}</td>
+                  <td style={{ textTransform: 'capitalize' }}>{submission.status}</td>
+                  <td>{getSubmitterLabel(submission)}</td>
+                  <td>{formatDate(submission.createdAt)}</td>
+                  <td>
+                    {submission.status === 'pending' ? (
+                      <div className="admin-actions">
+                        <button
+                          type="button"
+                          className="admin-btn primary"
+                          onClick={() => handleAction(submission._id, 'approve')}
+                          disabled={isRowActing}
+                        >
+                          {isRowActing ? 'Processing...' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn ghost"
+                          onClick={() => handleAction(submission._id, 'reject')}
+                          disabled={isRowActing}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="muted">-</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+
+            {!loading && submissions.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="muted">
+                  No submissions found.
                 </td>
               </tr>
-            );
-          })}
-
-          {!loading && submissions.length === 0 ? (
-            <tr>
-              <td colSpan={6} style={{ padding: '10px 6px' }}>
-                No submissions found.
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
 
       {!loading && submissions.length > 0 ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <div className="admin-pagination">
           <p style={{ margin: 0 }}>
             Page {safePage} of {totalPages}
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="admin-btn"
+              disabled={safePage <= 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+            >
               Prev
             </button>
             <button
               type="button"
+              className="admin-btn"
               disabled={safePage >= totalPages}
               onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
             >

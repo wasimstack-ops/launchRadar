@@ -24,49 +24,49 @@ function AdminDashboardPage() {
   };
 
   return (
-    <main style={{ maxWidth: 1040, margin: '30px auto', padding: 16 }}>
-      <h1 style={{ marginBottom: 20 }}>Admin Dashboard</h1>
+    <main className="admin-shell">
+      <h1 className="admin-title">Admin Dashboard</h1>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+      <div className="admin-tabs">
         <button
           type="button"
           onClick={() => setActiveSection('create')}
-          style={{ background: activeSection === 'create' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'create' ? ' active' : ''}`}
         >
           Create Listing
         </button>
         <button
           type="button"
           onClick={() => setActiveSection('listings')}
-          style={{ background: activeSection === 'listings' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'listings' ? ' active' : ''}`}
         >
           Listings
         </button>
         <button
           type="button"
           onClick={() => setActiveSection('submissions')}
-          style={{ background: activeSection === 'submissions' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'submissions' ? ' active' : ''}`}
         >
           Pending Submissions
         </button>
         <button
           type="button"
           onClick={() => setActiveSection('operations')}
-          style={{ background: activeSection === 'operations' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'operations' ? ' active' : ''}`}
         >
           Operations
         </button>
         <button
           type="button"
           onClick={() => setActiveSection('crypto')}
-          style={{ background: activeSection === 'crypto' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'crypto' ? ' active' : ''}`}
         >
           Crypto
         </button>
         <button
           type="button"
           onClick={() => setActiveSection('subscribers')}
-          style={{ background: activeSection === 'subscribers' ? '#0f766e' : '#6b7280' }}
+          className={`admin-tab${activeSection === 'subscribers' ? ' active' : ''}`}
         >
           Subscribers
         </button>
@@ -74,7 +74,7 @@ function AdminDashboardPage() {
 
       {activeSection === 'create' ? (
         <>
-          <h2 style={{ marginBottom: 12 }}>{editingListing ? 'Edit Listing' : 'Create Listing'}</h2>
+          <h2 className="admin-section-title">{editingListing ? 'Edit Listing' : 'Create Listing'}</h2>
           <ListingForm
             editingListing={editingListing}
             onSaved={handleSaved}
@@ -88,7 +88,7 @@ function AdminDashboardPage() {
 
       {activeSection === 'listings' ? (
         <>
-          <h2 style={{ marginBottom: 12 }}>All Listings</h2>
+          <h2 className="admin-section-title">All Listings</h2>
           <ListingsTable
             refreshSignal={refreshSignal}
             onEdit={(listing) => {
@@ -102,7 +102,7 @@ function AdminDashboardPage() {
 
       {activeSection === 'submissions' ? (
         <>
-          <h2 style={{ marginBottom: 12 }}>Moderation Queue</h2>
+          <h2 className="admin-section-title">Moderation Queue</h2>
           <PendingSubmissionsTable onApproved={() => setRefreshSignal((value) => value + 1)} />
         </>
       ) : null}
@@ -113,7 +113,7 @@ function AdminDashboardPage() {
 
       {activeSection === 'subscribers' ? (
         <>
-          <h2 style={{ marginBottom: 12 }}>Newsletter Subscribers</h2>
+          <h2 className="admin-section-title">Newsletter Subscribers</h2>
           <AdminSubscribersTable />
         </>
       ) : null}

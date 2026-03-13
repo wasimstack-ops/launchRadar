@@ -57,8 +57,8 @@ function LeaderboardPage() {
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
               <ChevronLeft size={14} /> Back
             </button>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/')}>
-              Go Back to Dashboard
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/workspace')}>
+              Go to Workspace
             </button>
           </div>
 

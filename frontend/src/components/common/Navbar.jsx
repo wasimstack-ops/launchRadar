@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Boxes, LogOut, Menu, Moon, Rocket, Sun, X } from 'lucide-react';
+import { Boxes, LogOut, Menu, Moon, Rocket, Sun, User, X } from 'lucide-react';
 import api from '../../api/client';
 import AuthPromptModal from './AuthPromptModal';
 
@@ -20,6 +20,8 @@ function Navbar({ searchTerm, onSearchChange }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const loadCurrentUser = () => {
     const token = localStorage.getItem('userToken');
@@ -58,7 +60,17 @@ function Navbar({ searchTerm, onSearchChange }) {
 
   useEffect(() => {
     setMobileOpen(false);
+    setShowProfileMenu(false);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!profileMenuRef.current || profileMenuRef.current.contains(event.target)) return;
+      setShowProfileMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleTheme = () => {
     const next = !isLight;
@@ -131,21 +143,36 @@ function Navbar({ searchTerm, onSearchChange }) {
             ) : null}
 
             {currentUser ? (
-              <div className="user-chip">
-                <span className="user-avatar">
-                  {getInitials(currentUser.name || currentUser.email)}
-                </span>
-                <span className="user-name">
-                  {currentUser.name || currentUser.email}
-                </span>
+              <div className="profile-menu" ref={profileMenuRef}>
                 <button
                   type="button"
-                  className="user-logout"
-                  onClick={handleLogout}
-                  title="Sign out"
+                  className="profile-avatar-btn"
+                  onClick={() => setShowProfileMenu((current) => !current)}
+                  title="Open profile menu"
+                  aria-haspopup="true"
+                  aria-expanded={showProfileMenu}
                 >
-                  <LogOut size={13} />
+                  <span className="profile-avatar">
+                    {getInitials(currentUser.name || currentUser.email)}
+                  </span>
                 </button>
+                {showProfileMenu ? (
+                  <div className="profile-menu-panel">
+                    <div className="profile-menu-header">
+                      <span className="profile-menu-name">{currentUser.name || 'Founder'}</span>
+                      <span className="profile-menu-email">{currentUser.email}</span>
+                    </div>
+                    <button type="button" className="profile-menu-item" onClick={() => navigate('/me')}>
+                      <User size={14} /> Update profile
+                    </button>
+                    <button type="button" className="profile-menu-item" onClick={() => navigate('/upgrade')}>
+                      <Rocket size={14} /> Upgrade to Pro
+                    </button>
+                    <button type="button" className="profile-menu-item danger" onClick={handleLogout}>
+                      <LogOut size={14} /> Log out
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -203,14 +230,14 @@ function Navbar({ searchTerm, onSearchChange }) {
                 <span className="nav-mobile-user-name">
                   {currentUser.name || currentUser.email}
                 </span>
-                <button
-                  type="button"
-                  className="user-logout"
-                  onClick={handleLogout}
-                  title="Sign out"
-                >
-                  <LogOut size={13} />
-                </button>
+                <div className="nav-mobile-user-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/me')}>
+                    Update profile
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
+                    Log out
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

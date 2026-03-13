@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle, Rocket } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
@@ -86,28 +86,18 @@ function SubmitListingPage() {
             </p>
             <h1 className="submit-title">Share an AI product</h1>
             <p className="submit-sub">
-              Spotted a great new AI tool? Submit it for review â€” approved listings are featured on the homepage.
+              Spotted a great new AI tool? Submit it for review — approved listings are featured on the homepage.
             </p>
           </div>
 
           {success ? (
-            <div style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border-md)',
-              borderRadius: 'var(--r-lg)',
-              padding: 40,
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 14,
-            }}>
+            <div className="submit-success-card">
               <CheckCircle size={40} style={{ color: 'var(--green)' }} strokeWidth={1.5} />
-              <h2 style={{ fontSize: '1.375rem', fontWeight: 800 }}>Submission received!</h2>
-              <p style={{ color: 'var(--text-2)', maxWidth: 380 }}>
+              <h2>Submission received!</h2>
+              <p>
                 Thanks for contributing. Our team will review your submission and it'll appear on the site if approved.
               </p>
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <div className="submit-success-actions">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSuccess(false)}>
                   Submit another
                 </button>
@@ -184,7 +174,7 @@ function SubmitListingPage() {
 
                 <div className="submit-form-actions">
                   <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? 'Submittingâ€¦' : (<>Submit for review <ArrowRight size={15} /></>)}
+                    {loading ? 'Submitting...' : (<>Submit for review <ArrowRight size={15} /></>)}
                   </button>
                   <Link to="/" className="btn btn-ghost">
                     <ArrowLeft size={14} /> Cancel
@@ -202,3 +192,4 @@ function SubmitListingPage() {
 }
 
 export default SubmitListingPage;
+
