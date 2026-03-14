@@ -400,9 +400,49 @@ async function getIdeaLeaderboard({ page = 1, limit = 25 }) {
   };
 }
 
+async function listAllIdeaReports({ page = 1, limit = 20, search = '' }) {
+  const normalizedPage = Math.max(1, Number(page) || 1);
+  const normalizedLimit = Math.max(1, Math.min(50, Number(limit) || 20));
+  const skip = (normalizedPage - 1) * normalizedLimit;
+
+  const query = {};
+  if (search) {
+    const term = String(search).trim();
+    query.$or = [
+      { title: { $regex: term, $options: 'i' } },
+      { idea: { $regex: term, $options: 'i' } },
+    ];
+  }
+
+  const [total, rows] = await Promise.all([
+    IdeaReport.countDocuments(query),
+    IdeaReport.find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(normalizedLimit)
+      .populate({ path: 'user', select: 'name email profileRole plan subscriptionStatus' })
+      .lean(),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / normalizedLimit));
+
+  return {
+    items: rows,
+    pagination: {
+      page: normalizedPage,
+      limit: normalizedLimit,
+      total,
+      totalPages,
+      hasNextPage: normalizedPage < totalPages,
+      hasPrevPage: normalizedPage > 1,
+    },
+  };
+}
+
 module.exports = {
   createIdeaReport,
   getIdeaReportById,
   listUserIdeaReports,
+  listAllIdeaReports,
   getIdeaLeaderboard,
 };

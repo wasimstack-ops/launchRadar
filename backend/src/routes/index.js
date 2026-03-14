@@ -14,9 +14,11 @@ const githubAutomationRoutes = require('../modules/automation/github/github.rout
 const rssAutomationRoutes = require('../modules/automation/rss/rss.routes');
 const productHuntAutomationRoutes = require('../modules/automation/producthunt/producthunt.routes');
 const adminOpsRoutes = require('../modules/admin/admin-ops.routes');
+const adminUsersRoutes = require('../modules/admin/admin-users.routes');
 const airdropScraperRoutes = require('../modules/airdrops/external/airdropScraper.routes');
 const agentRoutes = require('../modules/agents/agent.routes');
 const ideaReportRoutes = require('../modules/idea-reports/idea-report.routes');
+const billingRoutes = require('../modules/billing/billing.routes');
 
 const router = express.Router();
 
@@ -35,8 +37,10 @@ router.use(githubAutomationRoutes);
 router.use(rssAutomationRoutes);
 router.use(productHuntAutomationRoutes);
 router.use(adminOpsRoutes);
+router.use(adminUsersRoutes);
 router.use(airdropScraperRoutes);
 router.use(agentRoutes);
 router.use(ideaReportRoutes);
+router.use(billingRoutes);
 
 module.exports = router;

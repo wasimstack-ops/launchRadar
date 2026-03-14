@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import api from '../api/client';
 
 const PLANS = [
   {
@@ -46,6 +48,27 @@ const PLANS = [
 ];
 
 function UpgradePage() {
+  const [loadingPlan, setLoadingPlan] = useState('');
+  const [error, setError] = useState('');
+
+  const handleCheckout = async (plan) => {
+    if (plan !== 'pro') return;
+    setLoadingPlan(plan);
+    setError('');
+    try {
+      const response = await api.post('/api/billing/checkout', { plan });
+      const url = response.data?.data?.url;
+      if (!url) {
+        throw new Error('Stripe checkout URL not returned.');
+      }
+      window.location.href = url;
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Unable to start checkout.');
+    } finally {
+      setLoadingPlan('');
+    }
+  };
+
   return (
     <div>
       <Helmet>
@@ -63,39 +86,48 @@ function UpgradePage() {
             <p>Choose the plan that matches how serious you are about building, fundraising, and shipping.</p>
           </div>
 
+          {error ? <p className="form-error" style={{ textAlign: 'center', marginBottom: 16 }}>{error}</p> : null}
+
           <div className="plans-grid">
             {PLANS.map((plan) => (
               <article
                 key={plan.name}
                 className={`plan-card${plan.recommended ? ' recommended' : ''}`}
               >
-                <div className="plan-card-head">
-                  <div>
-                    <h3>{plan.name}</h3>
-                    <p>{plan.tagline}</p>
+                <div className="plan-card-body">
+                  <div className="plan-card-head">
+                    <div>
+                      <h3>{plan.name}</h3>
+                      <p>{plan.tagline}</p>
+                    </div>
+                    {plan.recommended ? <span className="plan-badge">Recommended</span> : null}
                   </div>
-                  {plan.recommended ? <span className="plan-badge">Recommended</span> : null}
+
+                  <div className="plan-price-row">
+                    <strong>{plan.price === 'Custom' ? 'Custom' : `INR ${plan.price}`}</strong>
+                    <span>{plan.price === 'Custom' ? 'Pricing' : '/ month'}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`plan-cta${plan.recommended ? ' recommended' : ''}`}
+                    onClick={() => handleCheckout(plan.name.toLowerCase())}
+                    disabled={loadingPlan === plan.name.toLowerCase() || plan.name.toLowerCase() !== 'pro'}
+                  >
+                    {loadingPlan === plan.name.toLowerCase() ? 'Redirecting...' : plan.cta}
+                  </button>
+
+                  <div className="plan-divider" />
+
+                  <ul className="plan-feature-list">
+                    {plan.features.map((feature) => (
+                      <li key={feature}>
+                        <Check size={15} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <div className="plan-price-row">
-                  <strong>{plan.price === 'Custom' ? 'Custom' : `INR ${plan.price}`}</strong>
-                  <span>{plan.price === 'Custom' ? 'Pricing' : '/ month'}</span>
-                </div>
-
-                <button type="button" className={`plan-cta${plan.recommended ? ' recommended' : ''}`}>
-                  {plan.cta}
-                </button>
-
-                <div className="plan-divider" />
-
-                <ul className="plan-feature-list">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>
-                      <Check size={15} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
               </article>
             ))}
           </div>

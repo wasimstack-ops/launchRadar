@@ -14,6 +14,11 @@ function sanitizeUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    profileRole: user.profileRole,
+    company: user.company,
+    bio: user.bio,
+    plan: user.plan,
+    subscriptionStatus: user.subscriptionStatus,
     createdAt: user.createdAt,
   };
 }
@@ -129,6 +134,23 @@ async function getCurrentUser(userId) {
   return sanitizeUser(user);
 }
 
+async function updateProfile(userId, payload) {
+  const updates = {};
+  if (typeof payload.name === 'string') updates.name = payload.name.trim();
+  if (typeof payload.company === 'string') updates.company = payload.company.trim();
+  if (typeof payload.bio === 'string') updates.bio = payload.bio.trim();
+  if (typeof payload.profileRole === 'string') updates.profileRole = payload.profileRole;
+
+  const user = await AuthUser.findByIdAndUpdate(userId, updates, { new: true });
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return sanitizeUser(user);
+}
+
 async function getFavoriteListings(userId) {
   const user = await AuthUser.findById(userId).populate({
     path: 'favorites',
@@ -169,4 +191,5 @@ module.exports = {
   getFavoriteListings,
   addFavoriteListing,
   removeFavoriteListing,
+  updateProfile,
 };

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, FileText, Home, MessageSquare, Plus, Rocket, Send, Trophy, Workflow } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { FileText, Home, Plus, Rocket, Trophy, Workflow } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
@@ -32,13 +32,9 @@ function WorkspacePage() {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [selectedReportId, setSelectedReportId] = useState('');
-  const [chatDraft, setChatDraft] = useState('');
-  const [ideaError, setIdeaError] = useState('');
-  const [ideaSubmitting, setIdeaSubmitting] = useState(false);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [reportsError, setReportsError] = useState('');
   const [downloadingId, setDownloadingId] = useState('');
-  const ideaPanelRef = useRef(null);
   const [reportState, setReportState] = useState({
     items: [],
     pagination: { page: 1, total: 0, totalPages: 1 },
@@ -130,33 +126,7 @@ function WorkspacePage() {
   const reports = Array.isArray(reportState.items) ? reportState.items : [];
   const selectedReport = reports.find((item) => String(item._id) === String(selectedReportId)) || reports[0] || null;
   const openIdeaPanel = () => {
-    ideaPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const handleIdeaSubmit = async (event) => {
-    event.preventDefault();
-    const idea = String(chatDraft || '').trim();
-    if (!idea) {
-      setIdeaError('Tell us what you are building before you submit.');
-      return;
-    }
-
-    setIdeaSubmitting(true);
-    setIdeaError('');
-    try {
-      const response = await api.post('/api/idea-reports', { idea });
-      const reportId = response.data?.data?._id;
-      if (!reportId) {
-        throw new Error('Idea report was created without an id');
-      }
-      setChatDraft('');
-      await loadReports(1);
-      navigate(`/idea-report/${reportId}`);
-    } catch (requestError) {
-      setIdeaError(requestError?.response?.data?.message || 'We could not evaluate your idea right now.');
-    } finally {
-      setIdeaSubmitting(false);
-    }
+    navigate('/upgrade');
   };
 
   const downloadDealMemo = async (reportId) => {
@@ -196,14 +166,6 @@ function WorkspacePage() {
         <div className="workspace-inner">
           <div className="workspace-layout">
             <aside className="workspace-sidebar">
-              <div className="workspace-sidebar-brand">
-                <div className="workspace-sidebar-brand-icon">W</div>
-                <div>
-                  <p className="workspace-sidebar-brand-title">WAYB</p>
-                  <p className="workspace-sidebar-brand-copy">Founder intelligence</p>
-                </div>
-              </div>
-
               <nav className="workspace-sidebar-nav">
                 <button type="button" className="workspace-sidebar-link active">
                   <Home size={18} /> Workspace
@@ -224,29 +186,6 @@ function WorkspacePage() {
             </aside>
 
             <section className="workspace-main">
-              <div className="workspace-topbar">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
-                  <ArrowLeft size={14} /> Back
-                </button>
-                <div className="workspace-topbar-actions">
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-                    Home
-                  </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={openIdeaPanel}>
-                    Idea analysis
-                  </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/submit')}>
-                    Submit a Launch
-                  </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/leaderboard')}>
-                    Leaderboard
-                  </button>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/me')}>
-                    Profile
-                  </button>
-                </div>
-              </div>
-
               <section className="workspace-hero">
                 <div className="workspace-hero-copy">
                   <span className="workspace-kicker">System active</span>
@@ -300,31 +239,6 @@ function WorkspacePage() {
                       <span className="workspace-stat-label">Best Rank</span>
                       <strong className="workspace-stat-value">{stats.bestRank ? `#${stats.bestRank}` : '-'}</strong>
                     </article>
-                  </section>
-
-                  <section className="workspace-panel" ref={ideaPanelRef}>
-                    <div className="workspace-panel-head">
-                      <h2><MessageSquare size={16} /> Idea analysis</h2>
-                      <span>What are you building?</span>
-                    </div>
-
-                    <div className="workspace-chat-shell">
-                      <form className="workspace-chat-composer" onSubmit={handleIdeaSubmit}>
-                        <textarea
-                          className="workspace-chat-input"
-                          placeholder="Share your idea in one or two sentences..."
-                          value={chatDraft}
-                          onChange={(event) => {
-                            setChatDraft(event.target.value);
-                            if (ideaError) setIdeaError('');
-                          }}
-                        />
-                        <button type="submit" className="workspace-chat-send" disabled={ideaSubmitting}>
-                          {ideaSubmitting ? '...' : <Send size={16} />}
-                        </button>
-                      </form>
-                      {ideaError ? <p className="form-error" style={{ marginTop: 10 }}>{ideaError}</p> : null}
-                    </div>
                   </section>
 
                   <section className="workspace-panel">

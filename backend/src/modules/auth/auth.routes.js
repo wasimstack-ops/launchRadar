@@ -8,6 +8,7 @@ const {
   getFavoritesController,
   addFavoriteController,
   removeFavoriteController,
+  updateProfileController,
 } = require('./auth.controller');
 
 const router = express.Router();
@@ -16,6 +17,7 @@ router.post('/auth/register', registerController);
 router.post('/auth/login', loginController);
 router.post('/auth/google', googleLoginController);
 router.get('/auth/me', authMiddleware, meController);
+router.patch('/auth/me', authMiddleware, updateProfileController);
 router.get('/auth/favorites', authMiddleware, getFavoritesController);
 router.post('/auth/favorites/:listingId', authMiddleware, addFavoriteController);
 router.delete('/auth/favorites/:listingId', authMiddleware, removeFavoriteController);

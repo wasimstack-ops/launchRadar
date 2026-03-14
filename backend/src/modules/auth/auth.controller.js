@@ -94,6 +94,21 @@ const meController = asyncHandler(async (req, res) => {
   });
 });
 
+const updateProfileController = asyncHandler(async (req, res) => {
+  const payload = req.body || {};
+  const data = await authService.updateProfile(req.user.userId, {
+    name: payload.name,
+    company: payload.company,
+    bio: payload.bio,
+    profileRole: payload.profileRole,
+  });
+
+  res.status(200).json({
+    success: true,
+    data,
+  });
+});
+
 const getFavoritesController = asyncHandler(async (req, res) => {
   const data = await authService.getFavoriteListings(req.user.userId);
 
@@ -129,4 +144,5 @@ module.exports = {
   getFavoritesController,
   addFavoriteController,
   removeFavoriteController,
+  updateProfileController,
 };

@@ -1,6 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth.middleware');
-const { createIdeaReport, getIdeaReportById, listUserIdeaReports, getIdeaLeaderboard } = require('./idea-report.service');
+const requireAdminAccess = require('../../middleware/adminAccess.middleware');
+const { createIdeaReport, getIdeaReportById, listUserIdeaReports, getIdeaLeaderboard, listAllIdeaReports } = require('./idea-report.service');
 
 const router = express.Router();
 
@@ -36,6 +37,20 @@ router.get('/idea-reports/me/list', authMiddleware, async (req, res, next) => {
       userId: req.user.userId,
       page: req.query?.page,
       limit: req.query?.limit,
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/admin/idea-reports', requireAdminAccess, async (req, res, next) => {
+  try {
+    const data = await listAllIdeaReports({
+      page: req.query?.page,
+      limit: req.query?.limit,
+      search: req.query?.search,
     });
 
     res.status(200).json({ success: true, data });

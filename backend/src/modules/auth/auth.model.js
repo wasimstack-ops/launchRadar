@@ -24,6 +24,43 @@ const authSchema = new mongoose.Schema(
       default: 'user',
       enum: ['user', 'admin'],
     },
+    profileRole: {
+      type: String,
+      default: 'founder',
+      enum: ['founder', 'builder', 'investor', 'advisor', 'other'],
+    },
+    company: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    bio: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    plan: {
+      type: String,
+      default: 'free',
+      enum: ['free', 'pro', 'business'],
+    },
+    subscriptionStatus: {
+      type: String,
+      default: 'inactive',
+      enum: ['inactive', 'trialing', 'active', 'past_due', 'canceled', 'unpaid'],
+    },
+    stripeCustomerId: {
+      type: String,
+      default: '',
+    },
+    stripeSubscriptionId: {
+      type: String,
+      default: '',
+    },
+    stripeCurrentPeriodEnd: {
+      type: Date,
+      default: null,
+    },
     favorites: [
       {
         type: mongoose.Schema.Types.ObjectId,

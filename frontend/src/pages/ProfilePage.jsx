@@ -20,7 +20,7 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({ name: '', role: '', company: '', bio: '' });
+  const [form, setForm] = useState({ name: '', profileRole: '', company: '', bio: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,7 +30,7 @@ function ProfilePage() {
         setUser(nextUser);
         setForm({
           name: nextUser?.name || '',
-          role: nextUser?.role || 'founder',
+          profileRole: nextUser?.profileRole || 'founder',
           company: nextUser?.company || '',
           bio: nextUser?.bio || '',
         });
@@ -52,7 +52,7 @@ function ProfilePage() {
     try {
       const response = await api.patch('/api/auth/me', {
         name: String(form.name || '').trim(),
-        role: form.role,
+        profileRole: form.profileRole,
         company: String(form.company || '').trim(),
         bio: String(form.bio || '').trim(),
       });
@@ -60,7 +60,7 @@ function ProfilePage() {
       setUser(updatedUser);
       setForm({
         name: updatedUser?.name || form.name,
-        role: updatedUser?.role || form.role,
+        profileRole: updatedUser?.profileRole || form.profileRole,
         company: updatedUser?.company || form.company,
         bio: updatedUser?.bio || form.bio,
       });
@@ -101,7 +101,7 @@ function ProfilePage() {
               <div className='profile-rows'>
                 <div className='profile-row'>
                   <span className='profile-row-label'>Role</span>
-                  <span className={`role-badge ${user.role || 'user'}`}>{user.role || 'user'}</span>
+                  <span className={`role-badge ${user.profileRole || 'founder'}`}>{user.profileRole || 'founder'}</span>
                 </div>
                 {user.company ? (
                   <div className='profile-row'>
@@ -141,8 +141,8 @@ function ProfilePage() {
                   <span className='profile-row-label'>Role</span>
                   <select
                     className='input-select'
-                    name='role'
-                    value={form.role}
+                    name='profileRole'
+                    value={form.profileRole}
                     onChange={handleChange}
                     disabled={saving}
                   >

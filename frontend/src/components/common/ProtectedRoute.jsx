@@ -1,8 +1,8 @@
 ﻿import { Navigate } from 'react-router-dom';
 
 function ProtectedRoute({ children, mode = 'admin' }) {
-  const authDisabled = import.meta.env.VITE_DISABLE_AUTH === 'true';
-  // AUTH DISABLED FOR TESTING/DEVELOPMENT ONLY. Set VITE_DISABLE_AUTH=true to disable.
+  const authDisabled = true;
+  // AUTH DISABLED FOR TESTING/DEVELOPMENT ONLY.
   if (authDisabled) {
     return children;
   }

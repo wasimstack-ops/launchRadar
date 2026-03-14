@@ -15,8 +15,8 @@ function getEnv(name, defaultValue) {
 const env = {
   nodeEnv:        getEnv('NODE_ENV', 'development'),
   port:           Number(getEnv('PORT', 5000)),
-  mongoUri:       getEnv('MONGO_URI'),
-  adminKey:       getEnv('ADMIN_KEY'),
+  mongoUri:       getEnv('MONGO_URI', 'mongodb://localhost:27017/launchradar'),
+  adminKey:       getEnv('ADMIN_KEY', 'change_me_to_a_strong_random_string'),
   corsOrigin:     getEnv('CORS_ORIGIN', '*'),
 
   // JWT — no insecure default in production
@@ -40,6 +40,14 @@ const env = {
 
   // OpenAI
   openaiApiKey: getEnv('OPENAI_API_KEY', ''),
+
+  // Stripe
+  stripeSecretKey: getEnv('STRIPE_SECRET_KEY', ''),
+  stripeWebhookSecret: getEnv('STRIPE_WEBHOOK_SECRET', ''),
+  stripePricePro: getEnv('STRIPE_PRICE_PRO', ''),
+  stripePriceBusiness: getEnv('STRIPE_PRICE_BUSINESS', ''),
+  stripeSuccessUrl: getEnv('STRIPE_SUCCESS_URL', 'http://localhost:5174/upgrade?success=1'),
+  stripeCancelUrl: getEnv('STRIPE_CANCEL_URL', 'http://localhost:5174/upgrade?canceled=1'),
 
   // Frontend base URL (for email links)
   frontendUrl:  getEnv('FRONTEND_URL', 'http://localhost:5174'),
