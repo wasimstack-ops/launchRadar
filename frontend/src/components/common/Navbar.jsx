@@ -137,7 +137,7 @@ function Navbar({ searchTerm, onSearchChange }) {
             </Link>
 
             {!currentUser ? (
-              <Link to="/auth" className="nav-login-btn">
+              <Link to="/auth?next=%2Fworkspace" className="nav-login-btn">
                 Log In
               </Link>
             ) : null}
@@ -217,7 +217,7 @@ function Navbar({ searchTerm, onSearchChange }) {
                 </Link>
               ) : null}
               {!currentUser ? (
-                <Link to="/auth" className="nav-link">
+                <Link to="/auth?next=%2Fworkspace" className="nav-link">
                   Log In
                 </Link>
               ) : null}

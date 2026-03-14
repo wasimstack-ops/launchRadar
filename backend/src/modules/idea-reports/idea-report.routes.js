@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth.middleware');
 const requireAdminAccess = require('../../middleware/adminAccess.middleware');
-const { createIdeaReport, getIdeaReportById, listUserIdeaReports, getIdeaLeaderboard, listAllIdeaReports } = require('./idea-report.service');
+const { createIdeaReport, getIdeaReportById, getIdeaReportPdfBuffer, listUserIdeaReports, getIdeaLeaderboard, listAllIdeaReports } = require('./idea-report.service');
 
 const router = express.Router();
 
@@ -54,6 +54,22 @@ router.get('/admin/idea-reports', requireAdminAccess, async (req, res, next) => 
     });
 
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/idea-reports/:id/pdf', authMiddleware, async (req, res, next) => {
+  try {
+    const pdfBuffer = await getIdeaReportPdfBuffer({
+      userId: req.user.userId,
+      reportId: req.params.id,
+      isAdmin: req.user.role === 'admin',
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="deal-memo-${req.params.id}.pdf"`);
+    res.status(200).send(pdfBuffer);
   } catch (error) {
     next(error);
   }

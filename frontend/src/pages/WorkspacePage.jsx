@@ -126,7 +126,7 @@ function WorkspacePage() {
   const reports = Array.isArray(reportState.items) ? reportState.items : [];
   const selectedReport = reports.find((item) => String(item._id) === String(selectedReportId)) || reports[0] || null;
   const openIdeaPanel = () => {
-    navigate('/upgrade');
+    navigate('/?compose=1');
   };
 
   const downloadDealMemo = async (reportId) => {

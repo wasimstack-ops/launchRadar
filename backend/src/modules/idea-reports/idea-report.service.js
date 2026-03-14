@@ -120,6 +120,134 @@ function deriveTrendTier(score) {
   return 'Needs Further Validation';
 }
 
+function normalizePdfText(value) {
+  return String(value || '')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "'")
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .trim();
+}
+
+function wrapPdfText(text, maxChars = 88) {
+  const normalized = String(text || '').trim();
+  if (!normalized) return [''];
+  const words = normalized.split(/\s+/);
+  const lines = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxChars) {
+      current = candidate;
+      continue;
+    }
+    if (current) lines.push(current);
+    current = word;
+  }
+
+  if (current) lines.push(current);
+  return lines;
+}
+
+function buildIdeaReportPdfBuffer(report) {
+  const rows = [];
+  const pushLine = (text = '') => rows.push(normalizePdfText(text));
+  const pushParagraph = (text = '') => {
+    const lines = wrapPdfText(text);
+    for (const line of lines) pushLine(line);
+    pushLine('');
+  };
+
+  pushLine(`WAYB Deal Memo - ${report.title || 'Idea Report'}`);
+  pushLine('');
+  pushLine(`Title: ${report.title || 'Untitled Idea'}`);
+  pushLine(`Score: ${Number(report.investorScore || 0)} / 100`);
+  pushLine(`Rank: #${Number(report.globalRank || 0) || '-'}`);
+  pushLine(`Tier: ${report.trendTier || 'Ranked Idea'}`);
+  pushLine('');
+  pushParagraph(report.subtitle || 'Project Deal Memo & Investor Readiness Report');
+  pushParagraph(report.executiveSummary || '');
+
+  for (const section of Array.isArray(report.memoSections) ? report.memoSections : []) {
+    pushLine(String(section?.title || 'Section').toUpperCase());
+    pushParagraph(section?.body || '');
+  }
+
+  pushLine('AI RECOMMENDATIONS');
+  for (const item of Array.isArray(report.playbook) ? report.playbook : []) {
+    pushParagraph(`${item?.title || 'Recommendation'}: ${item?.body || ''}`);
+  }
+
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const marginLeft = 48;
+  const marginTop = 52;
+  const lineHeight = 16;
+  const maxLinesPerPage = 44;
+
+  const pages = [];
+  for (let i = 0; i < rows.length; i += maxLinesPerPage) {
+    pages.push(rows.slice(i, i + maxLinesPerPage));
+  }
+
+  const objects = [];
+  const addObject = (content) => {
+    objects.push(content);
+    return objects.length;
+  };
+
+  const fontObjectId = addObject('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const pageObjectIds = [];
+
+  for (const pageLines of pages) {
+    const commands = ['BT', '/F1 12 Tf', `1 0 0 1 ${marginLeft} ${pageHeight - marginTop} Tm`, '14 TL'];
+    pageLines.forEach((line, index) => {
+      if (index === 0) {
+        commands.push(`(${line}) Tj`);
+      } else {
+        commands.push('T*');
+        commands.push(`(${line}) Tj`);
+      }
+    });
+    commands.push('ET');
+
+    const stream = commands.join('\n');
+    const contentObjectId = addObject(`<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream`);
+    const pageObjectId = addObject(
+      `<< /Type /Page /Parent PAGES_REF /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjectId} 0 R /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> >>`
+    );
+    pageObjectIds.push(pageObjectId);
+  }
+
+  const pagesObjectId = addObject(
+    `<< /Type /Pages /Count ${pageObjectIds.length} /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(' ')}] >>`
+  );
+
+  pageObjectIds.forEach((pageObjectId) => {
+    objects[pageObjectId - 1] = objects[pageObjectId - 1].replace('PAGES_REF', `${pagesObjectId} 0 R`);
+  });
+
+  const catalogObjectId = addObject(`<< /Type /Catalog /Pages ${pagesObjectId} 0 R >>`);
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+
+  const xrefStart = Buffer.byteLength(pdf, 'utf8');
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += '0000000000 65535 f \n';
+  for (let i = 1; i <= objects.length; i += 1) {
+    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogObjectId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return Buffer.from(pdf, 'utf8');
+}
+
 async function recalculateLeaderboard() {
   const reports = await IdeaReport.find({})
     .sort({ investorScore: -1, createdAt: 1, _id: 1 })
@@ -329,6 +457,11 @@ async function getIdeaReportById({ userId, reportId, isAdmin = false }) {
   return report;
 }
 
+async function getIdeaReportPdfBuffer({ userId, reportId, isAdmin = false }) {
+  const report = await getIdeaReportById({ userId, reportId, isAdmin });
+  return buildIdeaReportPdfBuffer(report);
+}
+
 async function listUserIdeaReports({ userId, page = 1, limit = 12 }) {
   const normalizedPage = Math.max(1, Number(page) || 1);
   const normalizedLimit = Math.max(1, Math.min(24, Number(limit) || 12));
@@ -442,6 +575,7 @@ async function listAllIdeaReports({ page = 1, limit = 20, search = '' }) {
 module.exports = {
   createIdeaReport,
   getIdeaReportById,
+  getIdeaReportPdfBuffer,
   listUserIdeaReports,
   listAllIdeaReports,
   getIdeaLeaderboard,

@@ -55,7 +55,7 @@ function normalizeTopics(input) {
 
 function truncate(text, max) {
   const v = String(text || '').trim();
-  return v.length <= max ? v : `${v.slice(0, max).trimEnd()}â€¦`;
+  return v.length <= max ? v : `${v.slice(0, max).trimEnd()}...`;
 }
 
 function timeAgo(dateStr) {
@@ -142,7 +142,7 @@ function NewsletterCTA() {
         </p>
         <h2 className="newsletter-title">Never miss an AI launch</h2>
         <p className="newsletter-sub">
-          Get a weekly roundup of the best new AI tools, products, and startups â€” curated and delivered to your inbox.
+          Get a weekly roundup of the best new AI tools, products, and startups - curated and delivered to your inbox.
         </p>
         {sent ? (
           <p style={{ color: 'var(--green)', fontWeight: 600 }}>
@@ -737,7 +737,7 @@ function ListingsPage() {
           </section>
         </main>
 
-        {/* ASIDE â€” News Feed */}
+        {/* ASIDE - News Feed */}
         <aside className="content-aside">
           <div className="news-aside">
             <div className="news-aside-header">

@@ -24,14 +24,7 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <RedirectIfAuthenticated>
-              <ListingsPage />
-            </RedirectIfAuthenticated>
-          }
-        />
+        <Route path="/" element={<ListingsPage />} />
         <Route path="/crypto" element={<CryptoPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/airdrops" element={<AirdropsPage />} />
