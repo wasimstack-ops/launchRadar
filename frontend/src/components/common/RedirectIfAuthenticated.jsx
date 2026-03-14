@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 
 function RedirectIfAuthenticated({ children, to = '/workspace' }) {
-  const authDisabled = true;
+  const authDisabled = false;
   // AUTH DISABLED FOR TESTING/DEVELOPMENT ONLY.
   if (authDisabled) {
     return <Navigate to={to} replace />;
