@@ -7,6 +7,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Compass,
+  Mic,
+  MicOff,
   MessageSquare,
   Newspaper,
   Rocket,
@@ -181,9 +184,16 @@ function ListingsPage() {
   const [ideaInput, setIdeaInput] = useState('');
   const [ideaSubmitLoading, setIdeaSubmitLoading] = useState(false);
   const [ideaSubmitError, setIdeaSubmitError] = useState('');
+  const [heroHeadline, setHeroHeadline] = useState('');
   const [showIdeaPrompt, setShowIdeaPrompt] = useState(false);
   const [submitAfterAuth, setSubmitAfterAuth] = useState(false);
   const [launchFormAfterAuth, setLaunchFormAfterAuth] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+  const baseTranscriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
+  const speechSupported = typeof window !== 'undefined' &&
+    (window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const [topics, setTopics] = useState([]);
   const [topToday, setTopToday] = useState([]);
@@ -204,13 +214,23 @@ function ListingsPage() {
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const ideaInputRef = useRef(null);
+  const heroTextareaRef = useRef(null);
 
   const focusIdeaComposer = () => {
-    if (!ideaInputRef.current) return;
-    ideaInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    ideaInputRef.current.focus();
+    if (!heroTextareaRef.current) return;
+    heroTextareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    heroTextareaRef.current.focus();
   };
+
+  const resizeHeroTextarea = () => {
+    if (!heroTextareaRef.current) return;
+    heroTextareaRef.current.style.height = 'auto';
+    heroTextareaRef.current.style.height = `${heroTextareaRef.current.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    resizeHeroTextarea();
+  }, [ideaInput]);
 
   useEffect(() => {
     const activeIdea = HERO_IDEA_EXAMPLES[ideaExampleIndex] || '';
@@ -236,8 +256,48 @@ function ListingsPage() {
   }, [ideaExampleIndex, isDeletingIdea, typedIdea]);
 
   useEffect(() => {
+    let mounted = true;
+    const phrases = ['WAYB', 'What are you building?'];
+    let phraseIndex = 0;
+    let charIndex = 0;
+    let deleting = false;
+
+    const tick = () => {
+      if (!mounted) return;
+      const current = phrases[phraseIndex];
+
+      if (!deleting) {
+        charIndex += 1;
+        setHeroHeadline(current.slice(0, charIndex));
+        if (charIndex === current.length) {
+          deleting = true;
+          setTimeout(tick, 1100);
+          return;
+        }
+      } else {
+        charIndex -= 1;
+        setHeroHeadline(current.slice(0, Math.max(charIndex, 0)));
+        if (charIndex <= 0) {
+          deleting = false;
+          phraseIndex = (phraseIndex + 1) % phrases.length;
+          setTimeout(tick, 350);
+          return;
+        }
+      }
+
+      setTimeout(tick, deleting ? 45 : 70);
+    };
+
+    const start = setTimeout(tick, 400);
+    return () => {
+      mounted = false;
+      clearTimeout(start);
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('compose') === '1' && ideaInputRef.current) {
+    if (params.get('compose') === '1' && heroTextareaRef.current) {
       window.setTimeout(() => {
         focusIdeaComposer();
       }, 0);
@@ -249,6 +309,46 @@ function ListingsPage() {
     window.addEventListener('wayb-focus-compose', handleComposeFocus);
     return () => window.removeEventListener('wayb-focus-compose', handleComposeFocus);
   }, []);
+
+  useEffect(() => {
+    if (!speechSupported) return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let finalText = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      if (finalText.trim()) {
+        const nextBase = `${baseTranscriptRef.current} ${finalText}`.trim();
+        baseTranscriptRef.current = nextBase;
+        interimTranscriptRef.current = '';
+        setIdeaInput(nextBase);
+      } else if (interim.trim()) {
+        interimTranscriptRef.current = interim;
+        setIdeaInput(`${baseTranscriptRef.current} ${interim}`.trim());
+      }
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.stop();
+      recognitionRef.current = null;
+    };
+  }, [speechSupported]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -378,7 +478,7 @@ function ListingsPage() {
     const idea = String(ideaOverride ?? ideaInput).trim();
     if (!idea) {
       setShowIdeaPrompt(true);
-      ideaInputRef.current?.focus();
+      heroTextareaRef.current?.focus();
       return;
     }
 
@@ -404,7 +504,7 @@ function ListingsPage() {
     const idea = String(ideaInput || '').trim();
     if (!idea) {
       setShowIdeaPrompt(true);
-      ideaInputRef.current?.focus();
+      heroTextareaRef.current?.focus();
       return;
     }
 
@@ -427,6 +527,33 @@ function ListingsPage() {
     setShowAuthPrompt(true);
   };
 
+  const handleExploreScroll = () => {
+    const section = document.getElementById('products');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (window?.history?.replaceState) {
+        window.history.replaceState(null, '', '#products');
+      } else {
+        window.location.hash = 'products';
+      }
+      return;
+    }
+    navigate('/#products');
+  };
+
+  const toggleVoice = () => {
+    if (!speechSupported || !recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    baseTranscriptRef.current = ideaInput.trim();
+    interimTranscriptRef.current = '';
+    setIsListening(true);
+    recognitionRef.current.start();
+  };
+
   return (
     <div>
       <Helmet>
@@ -444,60 +571,95 @@ function ListingsPage() {
       <Navbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       {/* ---- HERO ---- */}
-      <section className="hero">
-        <div className="hero-bg">
-          <div className="hero-orb hero-orb-1" />
-          <div className="hero-orb hero-orb-2" />
-          <div className="hero-orb hero-orb-3" />
-        </div>
-        <div className="hero-content">
-          <span className="hero-badge">
+      <section className="hero hero-clean">
+        <div className="hero-clean-bg" />
+        <div className="hero-content hero-clean-content fade-up">
+          <span className="hero-badge hero-clean-badge">
             <span className="hero-live-dot" />
             Live - WAYB | What are you building?
           </span>
-          <h1 className="hero-title">
-            What are you building?
+          <h1 className="hero-title hero-clean-title hero-typing" aria-live="polite">
+            {heroHeadline}
+            <span className="hero-typing-caret" aria-hidden="true">|</span>
           </h1>
-          <p className="hero-sub">
-            Builders, this is your chance to share what are you building and get featured on the leaderboard to win grants and bounties, move to the top 5 list and get the edge.
+          <p className="hero-sub hero-clean-sub">
+            Builders, this is your chance to share what you’re building and get featured on the leaderboard to win grants and bounties.
           </p>
-          <div className="hero-idea-box" aria-label="Example startup ideas">
-            <div className="hero-idea-display">
+
+          <div className="hero-chat-shell">
+            <div className="hero-chat-bar">
               <textarea
-                ref={ideaInputRef}
-                className="hero-idea-input"
-                placeholder={typedIdea || 'Type your product idea here...'}
+                ref={heroTextareaRef}
+                rows={1}
+                className="hero-chat-input"
+                placeholder={typedIdea || 'I want to build a SaaS tool for…'}
                 value={ideaInput}
                 onChange={(event) => {
                   setIdeaInput(event.target.value);
+                  baseTranscriptRef.current = event.target.value;
+                  interimTranscriptRef.current = '';
                   if (ideaSubmitError) setIdeaSubmitError('');
                 }}
-                rows={4}
               />
+              <div className="hero-chat-actions">
+                <button
+                  type="button"
+                  className={`hero-chat-voice${isListening ? ' active' : ''}`}
+                  onClick={toggleVoice}
+                  disabled={!speechSupported}
+                  title={speechSupported ? 'Use voice input' : 'Voice input not supported'}
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
+                <button
+                  type="button"
+                  className="hero-chat-submit"
+                  onClick={handleHeroSubmit}
+                  disabled={ideaSubmitLoading}
+                  aria-label="Submit idea"
+                >
+                  <ArrowUpRight size={16} />
+                </button>
+              </div>
             </div>
-            <div className="hero-idea-actions">
-              <button
-                type="button"
-                className="hero-idea-submit-btn"
-                onClick={handleHeroSubmit}
-                disabled={ideaSubmitLoading}
-              >
-                Submit
-              </button>
-            </div>
+            {ideaSubmitError && <p className="form-error" style={{ marginTop: 10 }}>{ideaSubmitError}</p>}
           </div>
-          {ideaSubmitError && <p className="form-error" style={{ marginTop: -6 }}>{ideaSubmitError}</p>}
-          <div className="hero-actions">
+
+          <div className="hero-actions hero-clean-actions">
             <a href="#products" className="btn btn-primary">
               Explore Products <ArrowRight size={15} />
             </a>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleLaunchCta}
-            >
+            <button type="button" className="btn btn-ghost" onClick={handleLaunchCta}>
               <Rocket size={15} /> Submit a Launch
             </button>
+          </div>
+
+          <div className="hero-feature-grid">
+            <button type="button" className="hero-feature-card" onClick={handleExploreScroll}>
+              <span className="hero-feature-icon"><Compass size={16} /></span>
+              <span className="hero-feature-title">Explore Products</span>
+              <span className="hero-feature-sub">Discover new tools built by the community.</span>
+            </button>
+            <button type="button" className="hero-feature-card" onClick={handleLaunchCta}>
+              <span className="hero-feature-icon"><Rocket size={16} /></span>
+              <span className="hero-feature-title">Submit a Launch</span>
+              <span className="hero-feature-sub">Launch your product to thousands of users.</span>
+            </button>
+            <button type="button" className="hero-feature-card" onClick={() => navigate('/leaderboard')}>
+              <span className="hero-feature-icon"><TrendingUp size={16} /></span>
+              <span className="hero-feature-title">Leaderboard</span>
+              <span className="hero-feature-sub">See the top ranked projects this week.</span>
+            </button>
+            <button type="button" className="hero-feature-card" onClick={() => navigate('/workspace')}>
+              <span className="hero-feature-icon"><MessageSquare size={16} /></span>
+              <span className="hero-feature-title">Workspace</span>
+              <span className="hero-feature-sub">Manage your projects and builder profile.</span>
+            </button>
+          </div>
+
+          <div className="hero-scroll-hint" aria-hidden="true">
+            <span className="hero-scroll-pointer" />
+            <span className="hero-scroll-text">Page scroll</span>
           </div>
         </div>
       </section>
@@ -874,7 +1036,7 @@ function ListingsPage() {
               className="btn btn-primary"
               onClick={() => {
                 setShowIdeaPrompt(false);
-                ideaInputRef.current?.focus();
+                heroTextareaRef.current?.focus();
               }}
             >
               Okay
@@ -887,3 +1049,4 @@ function ListingsPage() {
 }
 
 export default ListingsPage;
+
