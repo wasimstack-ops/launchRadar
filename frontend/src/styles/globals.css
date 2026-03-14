@@ -863,9 +863,9 @@ body.theme-light .site-nav {
 }
 
 .hero-typing {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
+  display: block;
+  position: relative;
+  min-height: 0;
 }
 
 .hero-typing-caret {
@@ -873,6 +873,26 @@ body.theme-light .site-nav {
   width: 10px;
   color: var(--text-2);
   animation: blink-caret 900ms step-end infinite;
+}
+
+.hero-acronym {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hero-acronym-line {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  font-weight: 700;
+}
+
+.hero-acronym-line strong {
+  font-size: 1.25em;
+  width: 24px;
+  text-align: left;
 }
 
 .hero-scroll-hint {
@@ -2979,15 +2999,22 @@ body:not(.theme-light) .hero-feature-icon {
     display: none;
   }
   .hero-title { font-size: 2.4rem; }
+  .hero-clean-title {
+    min-height: 2.8em;
+  }
+  .hero-typing {
+    min-height: 2.2em;
+  }
   .hero-clean-sub { font-size: 1.05rem; }
   .hero-chat-shell {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--chat-bottom-offset, 0px);
     width: 100%;
-    padding: 12px 16px 16px;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
     z-index: 30;
+    transform: translateZ(0);
   }
   .hero-chat-bar {
     flex-wrap: nowrap;
@@ -3097,6 +3124,12 @@ body:not(.theme-light) .hero-feature-icon {
     height: 34px;
   }
   .hero-title { font-size: 2.1rem; }
+  .hero-clean-title {
+    min-height: 3em;
+  }
+  .hero-typing {
+    min-height: 2.4em;
+  }
   .hero-clean-sub { font-size: 1rem; }
   .hero-actions { flex-direction: column; width: 100%; }
   .hero-actions .btn { width: 100%; justify-content: center; }

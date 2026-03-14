@@ -149,7 +149,7 @@ function NewsletterCTA() {
         </p>
         {sent ? (
           <p style={{ color: 'var(--green)', fontWeight: 600 }}>
-            âœ“ You're on the list! We'll be in touch.
+            You're on the list! We'll be in touch.
           </p>
         ) : (
           <form className="newsletter-form" onSubmit={handleSubmit}>
@@ -185,6 +185,9 @@ function ListingsPage() {
   const [ideaSubmitLoading, setIdeaSubmitLoading] = useState(false);
   const [ideaSubmitError, setIdeaSubmitError] = useState('');
   const [heroHeadline, setHeroHeadline] = useState('');
+  const [heroMode, setHeroMode] = useState('text');
+  const [isMobileHero, setIsMobileHero] = useState(false);
+  const [heroAcronymLines, setHeroAcronymLines] = useState(['', '', '', '']);
   const [showIdeaPrompt, setShowIdeaPrompt] = useState(false);
   const [submitAfterAuth, setSubmitAfterAuth] = useState(false);
   const [launchFormAfterAuth, setLaunchFormAfterAuth] = useState(false);
@@ -256,42 +259,130 @@ function ListingsPage() {
   }, [ideaExampleIndex, isDeletingIdea, typedIdea]);
 
   useEffect(() => {
-    let mounted = true;
-    const phrases = ['WAYB', 'What are you building?'];
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let deleting = false;
-
-    const tick = () => {
-      if (!mounted) return;
-      const current = phrases[phraseIndex];
-
-      if (!deleting) {
-        charIndex += 1;
-        setHeroHeadline(current.slice(0, charIndex));
-        if (charIndex === current.length) {
-          deleting = true;
-          setTimeout(tick, 1100);
-          return;
-        }
+    if (typeof window === 'undefined') return undefined;
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const updateMatch = () => setIsMobileHero(mediaQuery.matches);
+    updateMatch();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateMatch);
+    } else {
+      mediaQuery.addListener(updateMatch);
+    }
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', updateMatch);
       } else {
-        charIndex -= 1;
-        setHeroHeadline(current.slice(0, Math.max(charIndex, 0)));
-        if (charIndex <= 0) {
-          deleting = false;
-          phraseIndex = (phraseIndex + 1) % phrases.length;
-          setTimeout(tick, 350);
+        mediaQuery.removeListener(updateMatch);
+      }
+    };
+  }, [isMobileHero]);
+
+  useEffect(() => {
+    let mounted = true;
+    let timerId;
+    const acronym = [
+      { letter: 'W', word: 'What' },
+      { letter: 'A', word: 'Are' },
+      { letter: 'Y', word: 'You' },
+      { letter: 'B', word: 'Building' },
+    ];
+
+    const typeText = (text, onDone, hold = 900) => {
+      let index = 0;
+      const tick = () => {
+        if (!mounted) return;
+        index += 1;
+        setHeroHeadline(text.slice(0, index));
+        if (index < text.length) {
+          timerId = window.setTimeout(tick, 65);
           return;
         }
-      }
-
-      setTimeout(tick, deleting ? 45 : 70);
+        timerId = window.setTimeout(() => onDone?.(), hold);
+      };
+      tick();
     };
 
-    const start = setTimeout(tick, 400);
+    const eraseText = (text, onDone) => {
+      let index = text.length;
+      const tick = () => {
+        if (!mounted) return;
+        index -= 1;
+        setHeroHeadline(text.slice(0, Math.max(index, 0)));
+        if (index > 0) {
+          timerId = window.setTimeout(tick, 40);
+          return;
+        }
+        timerId = window.setTimeout(() => onDone?.(), 240);
+      };
+      tick();
+    };
+
+    const runDesktopLoop = () => {
+      setHeroMode('text');
+      typeText('WAYB', () => {
+        eraseText('WAYB', () => {
+          typeText('What are you building?', () => {
+            eraseText('What are you building?', runDesktopLoop);
+          }, 1100);
+        });
+      }, 800);
+    };
+
+    const runMobileLoop = () => {
+      setHeroMode('acronym');
+      setHeroHeadline('');
+      setHeroAcronymLines(['', '', '', '']);
+
+      let lineIndex = 0;
+      let charIndex = 0;
+
+      const tick = () => {
+        if (!mounted) return;
+        const target = acronym[lineIndex].word;
+        charIndex += 1;
+        setHeroAcronymLines((prev) => {
+          const next = [...prev];
+          next[lineIndex] = target.slice(0, charIndex);
+          return next;
+        });
+
+        if (charIndex < target.length) {
+          timerId = window.setTimeout(tick, 60);
+          return;
+        }
+
+        lineIndex += 1;
+        charIndex = 0;
+        if (lineIndex < acronym.length) {
+          timerId = window.setTimeout(tick, 180);
+          return;
+        }
+
+        timerId = window.setTimeout(() => {
+          setHeroMode('text');
+          typeText('WAYB', () => {
+            eraseText('WAYB', () => {
+              typeText('What are you building?', () => {
+                eraseText('What are you building?', runMobileLoop);
+              }, 1100);
+            });
+          }, 700);
+        }, 800);
+      };
+
+      tick();
+    };
+
+    if (typeof window === 'undefined') return undefined;
+    if (isMobileHero) {
+      runMobileLoop();
+    } else {
+      runDesktopLoop();
+    }
+
     return () => {
       mounted = false;
-      clearTimeout(start);
+      if (timerId) clearTimeout(timerId);
     };
   }, []);
 
@@ -303,6 +394,30 @@ function ListingsPage() {
       }, 0);
     }
   }, [location.search]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return undefined;
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    if (!mediaQuery.matches) return undefined;
+
+    const updateOffset = () => {
+      const viewport = window.visualViewport;
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      document.documentElement.style.setProperty('--chat-bottom-offset', `${offset}px`);
+    };
+
+    updateOffset();
+    window.visualViewport.addEventListener('resize', updateOffset);
+    window.visualViewport.addEventListener('scroll', updateOffset);
+    window.addEventListener('orientationchange', updateOffset);
+
+    return () => {
+      window.visualViewport.removeEventListener('resize', updateOffset);
+      window.visualViewport.removeEventListener('scroll', updateOffset);
+      window.removeEventListener('orientationchange', updateOffset);
+      document.documentElement.style.removeProperty('--chat-bottom-offset');
+    };
+  }, []);
 
   useEffect(() => {
     const handleComposeFocus = () => focusIdeaComposer();
@@ -579,11 +694,22 @@ function ListingsPage() {
             Live - WAYB | What are you building?
           </span>
           <h1 className="hero-title hero-clean-title hero-typing" aria-live="polite">
-            {heroHeadline}
-            <span className="hero-typing-caret" aria-hidden="true">|</span>
+            {isMobileHero && heroMode === 'acronym' ? (
+              <span className="hero-acronym" aria-hidden="true">
+                <span className="hero-acronym-line"><strong>W</strong><span>{heroAcronymLines[0]}</span></span>
+                <span className="hero-acronym-line"><strong>A</strong><span>{heroAcronymLines[1]}</span></span>
+                <span className="hero-acronym-line"><strong>Y</strong><span>{heroAcronymLines[2]}</span></span>
+                <span className="hero-acronym-line"><strong>B</strong><span>{heroAcronymLines[3]}</span></span>
+              </span>
+            ) : (
+              <>
+                {heroHeadline}
+                <span className="hero-typing-caret" aria-hidden="true">|</span>
+              </>
+            )}
           </h1>
           <p className="hero-sub hero-clean-sub">
-            Builders, this is your chance to share what you’re building and get featured on the leaderboard to win grants and bounties.
+            Builders, this is your chance to share what you're building and get featured on the leaderboard to win grants and bounties.
           </p>
 
           <div className="hero-chat-shell">
@@ -592,7 +718,7 @@ function ListingsPage() {
                 ref={heroTextareaRef}
                 rows={1}
                 className="hero-chat-input"
-                placeholder={typedIdea || 'I want to build a SaaS tool for…'}
+                placeholder={typedIdea || 'I want to build a SaaS tool for...'}
                 value={ideaInput}
                 onChange={(event) => {
                   setIdeaInput(event.target.value);
@@ -659,7 +785,7 @@ function ListingsPage() {
 
           <div className="hero-scroll-hint" aria-hidden="true">
             <span className="hero-scroll-pointer" />
-            <span className="hero-scroll-text">Page scroll</span>
+            <span className="hero-scroll-text">Scroll</span>
           </div>
         </div>
       </section>
@@ -1049,4 +1175,6 @@ function ListingsPage() {
 }
 
 export default ListingsPage;
+
+
 
