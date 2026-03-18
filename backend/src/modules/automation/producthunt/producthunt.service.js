@@ -625,13 +625,55 @@ async function getTopProductsSnapshot(page = 1, limit = 10, dateValue = null) {
   };
 }
 
+const MIN_TODAY_PRODUCTS = 10;
+
 async function fetchTopProductsToday(limit = 10, dateValue = null, page = 1) {
   const snapshot = await getTopProductsSnapshot(page, limit, dateValue);
-  if (snapshot.total > 0 || dateValue) return snapshot;
 
-  // Try syncing once if collection is empty.
-  await syncTopProductsSnapshot(Math.max(Number(limit) || 10, 20), null);
-  return getTopProductsSnapshot(page, limit, null);
+  // If a specific date was requested, return as-is.
+  if (dateValue) return snapshot;
+
+  // If today has enough products, return them.
+  if (snapshot.total >= MIN_TODAY_PRODUCTS) return snapshot;
+
+  // Try syncing once if collection is empty or thin.
+  if (snapshot.total === 0) {
+    await syncTopProductsSnapshot(Math.max(Number(limit) || 10, 20), null);
+    const refreshed = await getTopProductsSnapshot(page, limit, null);
+    if (refreshed.total >= MIN_TODAY_PRODUCTS) return refreshed;
+  }
+
+  // Today has fewer than MIN_TODAY_PRODUCTS — supplement with yesterday's snapshot.
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayKey = formatDateUtcKey(yesterday);
+
+  const yesterdayLatest = await ProductHuntTopProduct.findOne({
+    snapshotDate: { $regex: `^${yesterdayKey}` },
+  })
+    .sort({ snapshotDate: -1 })
+    .select('snapshotDate');
+
+  if (!yesterdayLatest?.snapshotDate) return snapshot;
+
+  const safeLimit = Number.isFinite(Number(limit)) ? Math.max(1, Math.min(50, Number(limit))) : 10;
+  const todayIds = new Set((snapshot.data || []).map((p) => String(p.ph_id)));
+  const needed = safeLimit - (snapshot.data || []).length;
+
+  const yesterdayData = await ProductHuntTopProduct.find({
+    snapshotDate: yesterdayLatest.snapshotDate,
+    ph_id: { $nin: [...todayIds] },
+  })
+    .sort({ votesCount: -1, rank: 1 })
+    .limit(needed)
+    .lean();
+
+  return {
+    ...snapshot,
+    data: [...(snapshot.data || []), ...yesterdayData],
+    total: (snapshot.total || 0) + yesterdayData.length,
+    supplementedFromDate: yesterdayKey,
+  };
 }
 
 async function cleanupOldTopProducts(deleteCount = TOP_PRODUCTS_DAILY_DELETE_COUNT) {
