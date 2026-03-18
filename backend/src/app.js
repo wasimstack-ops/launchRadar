@@ -23,10 +23,23 @@ const allowedOrigins = env.corsOrigin
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+function isOriginAllowed(origin) {
+  for (const allowed of allowedOrigins) {
+    if (allowed === '*') return true;
+    if (allowed === origin) return true;
+    // Support wildcard prefix patterns like *.vercel.app
+    if (allowed.startsWith('*.')) {
+      const suffix = allowed.slice(1); // e.g. ".vercel.app"
+      if (origin.endsWith(suffix)) return true;
+    }
+  }
+  return false;
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      if (!origin || isOriginAllowed(origin)) {
         callback(null, true);
         return;
       }
