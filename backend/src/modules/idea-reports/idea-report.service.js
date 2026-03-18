@@ -1,16 +1,21 @@
 const env = require('../../config/env');
 const IdeaReport = require('./idea-report.model');
+const { getActiveVariant } = require('../autoresearch/autoresearch.service');
 
-const SCORE_LIMITS = {
-  marketFit: 20,
-  problemUrgency: 15,
-  distributionPotential: 15,
-  technicalFeasibility: 10,
-  monetizationClarity: 10,
-  defensibility: 10,
-  founderAdvantage: 10,
-  timing: 10,
-};
+// SCORE_LIMITS is now driven by the active autoresearch variant.
+// Falls back to the baseline weights if no experiment has run yet.
+function getScoreLimits() {
+  return getActiveVariant().weights;
+}
+
+// Keep backward-compatible alias used by normalizeBreakdown / buildReadinessMetrics.
+const SCORE_LIMITS = new Proxy({}, {
+  get(_, key) { return getScoreLimits()[key]; },
+  ownKeys() { return Object.keys(getScoreLimits()); },
+  getOwnPropertyDescriptor(_, key) {
+    return { value: getScoreLimits()[key], enumerable: true, configurable: true };
+  },
+});
 
 const MODEL_ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -308,6 +313,12 @@ async function requestIdeaAnalysis(idea) {
     throw error;
   }
 
+  const activeVariant = getActiveVariant();
+  const weights = activeVariant.weights;
+  const breakdownSpec = Object.entries(weights)
+    .map(([key, max]) => `    "${key}": 0-${max}`)
+    .join(',\n');
+
   const prompt = `
 You are evaluating a startup idea for investor readiness.
 Return JSON only with this exact structure:
@@ -329,20 +340,13 @@ Return JSON only with this exact structure:
     { "title": "string", "body": "string" }
   ],
   "breakdown": {
-    "marketFit": 0-20,
-    "problemUrgency": 0-15,
-    "distributionPotential": 0-15,
-    "technicalFeasibility": 0-10,
-    "monetizationClarity": 0-10,
-    "defensibility": 0-10,
-    "founderAdvantage": 0-10,
-    "timing": 0-10
+${breakdownSpec}
   }
 }
 
 Constraints:
 - Be realistic, investor-minded, and concise.
-- Scores must be integers.
+- Scores must be integers within the specified ranges.
 - Memo section bodies must be 2-3 sentences each.
 - Playbook items must be concrete and execution-focused.
 
@@ -359,7 +363,7 @@ ${idea}
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.4,
+        temperature: activeVariant.temperature,
         responseMimeType: 'application/json',
       },
     }),
