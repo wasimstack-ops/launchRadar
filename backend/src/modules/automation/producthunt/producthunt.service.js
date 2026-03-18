@@ -654,7 +654,14 @@ async function fetchTopProductsToday(limit = 10, dateValue = null, page = 1) {
     .sort({ snapshotDate: -1 })
     .select('snapshotDate');
 
-  if (!yesterdayLatest?.snapshotDate) return snapshot;
+  // Yesterday not in DB — fetch it live and save it.
+  if (!yesterdayLatest?.snapshotDate) {
+    try {
+      await syncTopProductsSnapshot(50, yesterdayKey);
+    } catch (_) {
+      return snapshot;
+    }
+  }
 
   const safeLimit = Number.isFinite(Number(limit)) ? Math.max(1, Math.min(50, Number(limit))) : 10;
   const todayIds = new Set((snapshot.data || []).map((p) => String(p.ph_id)));
@@ -686,7 +693,18 @@ async function cleanupOldTopProducts(deleteCount = TOP_PRODUCTS_DAILY_DELETE_COU
     return { requested: safeDeleteCount, deleted: 0, candidates: 0 };
   }
 
-  const candidates = await ProductHuntTopProduct.find({ snapshotDate: { $ne: latest.snapshotDate } })
+  // Keep the last 2 distinct days so the fallback can supplement today with yesterday.
+  const latestDayPrefix = String(latest.snapshotDate).slice(0, 10);
+  const prevDay = new Date(latestDayPrefix);
+  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
+  const prevDayPrefix = formatDateUtcKey(prevDay);
+
+  const candidates = await ProductHuntTopProduct.find({
+    $nor: [
+      { snapshotDate: { $regex: `^${latestDayPrefix}` } },
+      { snapshotDate: { $regex: `^${prevDayPrefix}` } },
+    ],
+  })
     .sort({ snapshotDate: 1, createdAt: 1, rank: 1 })
     .limit(safeDeleteCount)
     .select('_id');
