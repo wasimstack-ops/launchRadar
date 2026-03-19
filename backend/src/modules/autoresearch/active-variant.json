@@ -1,0 +1,15 @@
+{
+  "id": "baseline",
+  "description": "Current production weights — the control group",
+  "temperature": 0.4,
+  "weights": {
+    "marketFit": 20,
+    "problemUrgency": 15,
+    "distributionPotential": 15,
+    "technicalFeasibility": 10,
+    "monetizationClarity": 10,
+    "defensibility": 10,
+    "founderAdvantage": 10,
+    "timing": 10
+  }
+}

@@ -1,17 +1,42 @@
-﻿function info(message, meta) {
-  if (meta) {
-    console.log(`[INFO] ${message}`, meta);
+function serializeValue(value) {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeValue(item));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, serializeValue(item)])
+    );
+  }
+
+  return value;
+}
+
+function write(level, message, meta, writer) {
+  const timestamp = new Date().toISOString();
+
+  if (meta !== undefined) {
+    writer(`[${level}] ${timestamp} ${message}`, serializeValue(meta));
     return;
   }
-  console.log(`[INFO] ${message}`);
+
+  writer(`[${level}] ${timestamp} ${message}`);
+}
+
+function info(message, meta) {
+  write('INFO', message, meta, console.log);
 }
 
 function error(message, meta) {
-  if (meta) {
-    console.error(`[ERROR] ${message}`, meta);
-    return;
-  }
-  console.error(`[ERROR] ${message}`);
+  write('ERROR', message, meta, console.error);
 }
 
 module.exports = {

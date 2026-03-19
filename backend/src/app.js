@@ -1,4 +1,5 @@
 const express = require('express');
+const { randomUUID } = require('node:crypto');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
@@ -36,6 +37,14 @@ function isOriginAllowed(origin) {
   return false;
 }
 
+function getRequestId(req) {
+  const incomingId = req.header('x-request-id');
+  if (incomingId && /^[A-Za-z0-9_-]{8,128}$/.test(incomingId)) {
+    return incomingId;
+  }
+  return randomUUID();
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -46,12 +55,21 @@ app.use(
       callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
+    exposedHeaders: ['x-request-id'],
   })
 );
 
+app.use((req, res, next) => {
+  const requestId = getRequestId(req);
+  req.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+  next();
+});
+
 // Request logging
+morgan.token('request-id', (req) => req.requestId || '-');
 app.use(
-  morgan(':method :url :status :response-time ms', {
+  morgan(':request-id :method :url :status :response-time ms', {
     stream: { write: (msg) => logger.info(msg.trim()) },
   })
 );
@@ -209,9 +227,24 @@ app.use((error, req, res, next) => {
   }
 
   const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+  const requestMeta = {
+    requestId: req.requestId || null,
+    method: req.method,
+    url: req.originalUrl,
+    statusCode,
+    ip: req.ip,
+  };
 
   if (statusCode >= 500) {
-    logger.error('Unhandled server error', { message: error.message, stack: error.stack });
+    logger.error('Unhandled server error', {
+      ...requestMeta,
+      error,
+    });
+  } else {
+    logger.info('Handled request error', {
+      ...requestMeta,
+      message: error.message,
+    });
   }
 
   const isProd = env.nodeEnv === 'production';
