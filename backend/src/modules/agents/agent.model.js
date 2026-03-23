@@ -4,7 +4,7 @@ const agentSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '', trim: true },
-    link: { type: String, required: true, unique: true, index: true, trim: true },
+    link: { type: String, required: true, unique: true, trim: true },
     website: { type: String, default: '', trim: true },
     category: { type: String, enum: ['agent', 'repo'], required: true, index: true },
     sourceType: { type: String, enum: ['open_source', 'curated', 'community'], required: true },

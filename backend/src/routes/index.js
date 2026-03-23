@@ -19,6 +19,7 @@ const airdropScraperRoutes = require('../modules/airdrops/external/airdropScrape
 const agentRoutes = require('../modules/agents/agent.routes');
 const ideaReportRoutes = require('../modules/idea-reports/idea-report.routes');
 const billingRoutes = require('../modules/billing/billing.routes');
+const eventsRoutes = require('../modules/events/events.routes');
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use(airdropScraperRoutes);
 router.use(agentRoutes);
 router.use(ideaReportRoutes);
 router.use(billingRoutes);
+router.use(eventsRoutes);
 
 module.exports = router;

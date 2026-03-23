@@ -9,6 +9,7 @@ import AdminSubscribersTable from '../components/admin/AdminSubscribersTable';
 import AdminUsersTable from '../components/admin/AdminUsersTable';
 import AdminBillingTable from '../components/admin/AdminBillingTable';
 import AdminIdeaReportsTable from '../components/admin/AdminIdeaReportsTable';
+import AdminEventsPanel from '../components/admin/AdminEventsPanel';
 
 function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -109,6 +110,13 @@ function AdminDashboardPage() {
             >
               Idea Reports
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('events')}
+              className={`admin-tab${activeSection === 'events' ? ' active' : ''}`}
+            >
+              Events
+            </button>
           </nav>
 
           <div className="admin-sidebar-footer">
@@ -183,6 +191,7 @@ function AdminDashboardPage() {
           {activeSection === 'billing' ? <AdminBillingTable /> : null}
 
           {activeSection === 'reports' ? <AdminIdeaReportsTable /> : null}
+          {activeSection === 'events'  ? <AdminEventsPanel />      : null}
         </section>
       </div>
     </main>

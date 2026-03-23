@@ -16,6 +16,8 @@ const ProductHuntTrending = require('../automation/producthunt/producthunt-trend
 const AirdropExternalSource = require('../airdrops/external/airdropExternal.model');
 
 const { fetchTopCoins } = require('../crypto/crypto.service');
+const { fetchAndSyncEvents } = require('../events/events.service');
+const CryptoEvent = require('../events/events.model');
 const { runNewsIngestion } = require('../news/news.service');
 const { fetchGithubAITrending } = require('../automation/github/github.service');
 const { fetchRSSFeeds } = require('../automation/rss/rss.service');
@@ -272,6 +274,96 @@ router.post(
     const count = Number.isFinite(Number(req.body?.count)) ? Number(req.body.count) : 40;
     const data = await cleanupLowVoteProducts(count);
     res.status(200).json({ success: true, message: 'Product Hunt products cleanup complete', data });
+  })
+);
+
+// ── Events admin endpoints ────────────────────────────────────────────────────
+router.get(
+  '/admin/ops/events/stats',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const now = new Date();
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+    const weekEnd = new Date(todayStart); weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+    const [total, todayCount, thisWeek, hotCount, latest] = await Promise.all([
+      CryptoEvent.countDocuments({ dateEvent: { $gte: todayStart } }),
+      CryptoEvent.countDocuments({ dateEvent: { $gte: todayStart, $lt: new Date(todayStart.getTime() + 86400000) } }),
+      CryptoEvent.countDocuments({ dateEvent: { $gte: todayStart, $lt: weekEnd } }),
+      CryptoEvent.countDocuments({ isHot: true, dateEvent: { $gte: todayStart } }),
+      CryptoEvent.findOne({ dateEvent: { $gte: todayStart } }).sort({ updatedAt: -1 }).select('updatedAt').lean(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total,
+        today: todayCount,
+        thisWeek,
+        hot: hotCount,
+        lastSynced: latest?.updatedAt || null,
+      },
+    });
+  })
+);
+
+router.post(
+  '/admin/ops/events/sync',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const result = await fetchAndSyncEvents();
+    res.status(200).json({
+      success: true,
+      message: `Synced ${result.fetched} events, deleted ${result.deleted} past events.`,
+      data: result,
+    });
+  })
+);
+
+router.post(
+  '/admin/ops/events/cleanup',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+    const result = await CryptoEvent.deleteMany({ dateEvent: { $lt: todayStart } });
+    res.status(200).json({
+      success: true,
+      message: `Deleted ${result.deletedCount} past events.`,
+      data: { deleted: result.deletedCount },
+    });
+  })
+);
+
+router.get(
+  '/admin/ops/events/list',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const filter = req.query.filter || 'upcoming';
+    const skip = (page - 1) * limit;
+
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+    const query = filter === 'past'
+      ? { dateEvent: { $lt: todayStart } }
+      : { dateEvent: { $gte: todayStart } };
+
+    const [total, items] = await Promise.all([
+      CryptoEvent.countDocuments(query),
+      CryptoEvent.find(query)
+        .sort({ dateEvent: filter === 'past' ? -1 : 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        items,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      },
+    });
   })
 );
 

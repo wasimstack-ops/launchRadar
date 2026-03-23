@@ -5,6 +5,7 @@ import ProfilePage from '../pages/ProfilePage';
 import ListingsPage from '../pages/ListingsPage';
 import CryptoPage from '../pages/CryptoPage';
 import AirdropsPage from '../pages/AirdropsPage';
+import EventsPage from '../pages/EventsPage';
 import AgentsPage from '../pages/AgentsPage';
 import CategoryProductsPage from '../pages/CategoryProductsPage';
 import ListingFormPage from '../pages/ListingFormPage';
@@ -28,6 +29,7 @@ function AppRoutes() {
         <Route path="/crypto" element={<CryptoPage />} />
         <Route path="/agents" element={<AgentsPage />} />
         <Route path="/airdrops" element={<AirdropsPage />} />
+        <Route path="/events" element={<EventsPage />} />
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />

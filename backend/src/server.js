@@ -18,6 +18,7 @@ const { startNewsCron, stopNewsCron } = require('./modules/news/news.service');
 const { startCryptoCron, stopCryptoCron } = require('./modules/crypto/crypto.service');
 const { startAgentsCron, stopAgentsCron } = require('./modules/agents/agent.service');
 const { startFuturepediaCron, stopFuturepediaCron } = require('./modules/agents/futurepedia.service');
+const { startEventsCron, stopEventsCron } = require('./modules/events/events.service');
 
 let server;
 let isShuttingDown = false;
@@ -42,6 +43,7 @@ async function startServer() {
     startCryptoCron();
     startAgentsCron();
     startFuturepediaCron();
+    startEventsCron();
 
     server = app.listen(env.port, () => {
       logger.info(`Server running on port ${env.port}`);
@@ -65,6 +67,7 @@ function shutdown(signal) {
   stopCryptoCron();
   stopAgentsCron();
   stopFuturepediaCron();
+  stopEventsCron();
 
   if (!server) {
     mongoose.connection.close(false).finally(() => process.exit(0));

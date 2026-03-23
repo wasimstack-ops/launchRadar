@@ -35,11 +35,16 @@ function info(message, meta) {
   write('INFO', message, meta, console.log);
 }
 
+function warn(message, meta) {
+  write('WARN', message, meta, console.warn);
+}
+
 function error(message, meta) {
   write('ERROR', message, meta, console.error);
 }
 
 module.exports = {
   info,
+  warn,
   error,
 };

@@ -49,6 +49,9 @@ const env = {
   stripeSuccessUrl: getEnv('STRIPE_SUCCESS_URL', 'http://localhost:5174/upgrade?success=1'),
   stripeCancelUrl: getEnv('STRIPE_CANCEL_URL', 'http://localhost:5174/upgrade?canceled=1'),
 
+  // CoinMarketCal — crypto events calendar (free tier: 1000 req/month)
+  coinMarketCalApiKey: getEnv('COINMARKETCAL_API_KEY', ''),
+
   // Frontend base URL (for email links)
   frontendUrl:  getEnv('FRONTEND_URL', 'http://localhost:5174'),
 };

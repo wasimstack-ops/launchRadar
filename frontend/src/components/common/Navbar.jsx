@@ -122,6 +122,9 @@ function Navbar({ searchTerm, onSearchChange }) {
             <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
               Airdrops
             </Link>
+            <Link to="/events" className={`nav-link${isActive('/events') ? ' active' : ''}`}>
+              Events
+            </Link>
             {currentUser ? (
               <Link to="/workspace" className={`nav-link${isActive('/workspace') ? ' active' : ''}`}>
                 My Workspace
@@ -210,6 +213,9 @@ function Navbar({ searchTerm, onSearchChange }) {
               </Link>
               <Link to="/airdrops" className={`nav-link${isActive('/airdrops') ? ' active' : ''}`}>
                 Airdrops
+              </Link>
+              <Link to="/events" className={`nav-link${isActive('/events') ? ' active' : ''}`}>
+                Events
               </Link>
               {currentUser ? (
                 <Link to="/workspace" className={`nav-link${isActive('/workspace') ? ' active' : ''}`}>
