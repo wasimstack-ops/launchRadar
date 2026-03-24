@@ -9,6 +9,9 @@ const PRODUCTHUNT_GRAPHQL_URL = 'https://api.producthunt.com/v2/api/graphql';
 const TOP_PRODUCTS_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const TOP_PRODUCTS_DAILY_INSERT_COUNT = 50;
 const TOP_PRODUCTS_DAILY_DELETE_COUNT = 50;
+const PRODUCTHUNT_REQUEST_TIMEOUT_MS = 15000;
+const PRODUCTHUNT_MAX_RETRIES = 2;
+const PRODUCTHUNT_RETRY_DELAY_MS = 1500;
 const WEEKLY_CLEANUP_HOUR_UTC = 0;
 const WEEKLY_CLEANUP_MINUTE_UTC = 15;
 const WEEKLY_CLEANUP_DELETE_COUNT = 40;
@@ -185,6 +188,70 @@ function getExpiryDateFromSnapshot(snapshotDate) {
   return new Date(Date.UTC(year, month - 1, day + 7, 0, 0, 0));
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getErrorCode(error) {
+  return (
+    error?.code ||
+    error?.cause?.code ||
+    error?.cause?.cause?.code ||
+    ''
+  );
+}
+
+function getErrorSummary(error) {
+  const segments = [];
+  let current = error;
+  let depth = 0;
+
+  while (current && depth < 5) {
+    const name = String(current?.name || 'Error').trim();
+    const message = String(current?.message || '').trim();
+    const code = String(current?.code || '').trim();
+    const part = [name, code].filter(Boolean).join(' ');
+    segments.push(message ? `${part}: ${message}` : part || 'Error');
+    current = current?.cause;
+    depth += 1;
+  }
+
+  return segments.filter(Boolean).join(' <- ');
+}
+
+function isRetryableTransportError(error) {
+  if (!error) return false;
+  if (error.name === 'AbortError') return true;
+
+  const code = getErrorCode(error);
+  return [
+    'ECONNRESET',
+    'ECONNREFUSED',
+    'EHOSTUNREACH',
+    'ENETUNREACH',
+    'ETIMEDOUT',
+    'UND_ERR_CONNECT_TIMEOUT',
+    'UND_ERR_HEADERS_TIMEOUT',
+    'UND_ERR_SOCKET',
+  ].includes(code);
+}
+
+function buildProductHuntRequestError(message, options = {}) {
+  const error = new Error(message, options.cause ? { cause: options.cause } : undefined);
+
+  if (options.statusCode !== undefined) error.statusCode = options.statusCode;
+  if (options.code !== undefined) error.code = options.code;
+  if (options.attempt !== undefined) error.attempt = options.attempt;
+  if (options.maxAttempts !== undefined) error.maxAttempts = options.maxAttempts;
+  if (options.url !== undefined) error.url = options.url;
+  if (options.responseStatus !== undefined) error.responseStatus = options.responseStatus;
+  if (options.responseBody !== undefined) error.responseBody = options.responseBody;
+  if (options.graphqlErrors !== undefined) error.graphqlErrors = options.graphqlErrors;
+  if (options.variables !== undefined) error.variables = options.variables;
+
+  return error;
+}
+
 async function executeProductHuntQuery(query, variables = {}) {
   const token = getProductHuntToken();
   if (!token) {
@@ -193,28 +260,106 @@ async function executeProductHuntQuery(query, variables = {}) {
     throw error;
   }
 
-  const response = await fetch(PRODUCTHUNT_GRAPHQL_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'LaunchRadar-Automation',
-    },
-    body: JSON.stringify({ query, variables }),
+  const maxAttempts = PRODUCTHUNT_MAX_RETRIES + 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => controller.abort(), PRODUCTHUNT_REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(PRODUCTHUNT_GRAPHQL_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'LaunchRadar-Automation',
+        },
+        body: JSON.stringify({ query, variables }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const responseBody = String(await response.text()).trim().slice(0, 500);
+        const shouldRetry = attempt < maxAttempts && [408, 429, 500, 502, 503, 504].includes(response.status);
+
+        const error = buildProductHuntRequestError(
+          `Product Hunt fetch failed: ${response.status}${responseBody ? ` - ${responseBody}` : ''}`,
+          {
+            statusCode: response.status,
+            attempt,
+            maxAttempts,
+            url: PRODUCTHUNT_GRAPHQL_URL,
+            responseStatus: response.status,
+            responseBody,
+            variables,
+          }
+        );
+
+        if (shouldRetry) {
+          logger.warn('[ProductHunt] retrying after HTTP failure', error);
+          await delay(PRODUCTHUNT_RETRY_DELAY_MS * attempt);
+          continue;
+        }
+
+        throw error;
+      }
+
+      const payload = await response.json();
+      if (payload?.errors?.length) {
+        const error = buildProductHuntRequestError(
+          `Product Hunt GraphQL error: ${payload.errors[0].message}`,
+          {
+            statusCode: 502,
+            attempt,
+            maxAttempts,
+            url: PRODUCTHUNT_GRAPHQL_URL,
+            graphqlErrors: payload.errors,
+            variables,
+          }
+        );
+        throw error;
+      }
+
+      return payload;
+    } catch (error) {
+      const isTimeout = error?.name === 'AbortError';
+      const code = getErrorCode(error);
+      const retryable = attempt < maxAttempts && (isTimeout || isRetryableTransportError(error));
+
+      const wrapped = buildProductHuntRequestError(
+        isTimeout
+          ? `Product Hunt request timed out after ${PRODUCTHUNT_REQUEST_TIMEOUT_MS}ms`
+          : `Product Hunt request failed: ${getErrorSummary(error) || 'Unknown network error'}`,
+        {
+          cause: error,
+          statusCode: isTimeout ? 504 : error?.statusCode || 502,
+          code: code || undefined,
+          attempt,
+          maxAttempts,
+          url: PRODUCTHUNT_GRAPHQL_URL,
+          variables,
+        }
+      );
+
+      if (retryable) {
+        logger.warn('[ProductHunt] retrying after transport failure', wrapped);
+        await delay(PRODUCTHUNT_RETRY_DELAY_MS * attempt);
+        continue;
+      }
+
+      throw wrapped;
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
+  }
+
+  throw buildProductHuntRequestError('Product Hunt request failed after all retry attempts', {
+    statusCode: 502,
+    maxAttempts,
+    url: PRODUCTHUNT_GRAPHQL_URL,
+    variables,
   });
-
-  if (!response.ok) {
-    throw new Error(`Product Hunt fetch failed: ${response.status}`);
-  }
-
-  const payload = await response.json();
-  if (payload?.errors?.length) {
-    const error = new Error(`Product Hunt GraphQL error: ${payload.errors[0].message}`);
-    error.statusCode = 502;
-    throw error;
-  }
-
-  return payload;
 }
 
 async function fetchProductHuntTrending() {

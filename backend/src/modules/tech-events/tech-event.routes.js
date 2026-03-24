@@ -1,0 +1,13 @@
+const express = require('express');
+const { getTechEvents } = require('./tech-event.service');
+
+const router = express.Router();
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+router.get('/tech-events', asyncHandler(async (req, res) => {
+  const { page, limit, search, format } = req.query;
+  const result = await getTechEvents({ page, limit, search, format: format || 'all' });
+  res.status(200).json({ success: true, ...result });
+}));
+
+module.exports = router;

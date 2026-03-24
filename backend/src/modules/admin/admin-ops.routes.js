@@ -18,6 +18,8 @@ const AirdropExternalSource = require('../airdrops/external/airdropExternal.mode
 const { fetchTopCoins } = require('../crypto/crypto.service');
 const { fetchAndSyncEvents } = require('../events/events.service');
 const CryptoEvent = require('../events/events.model');
+const { fetchAndSyncTechEvents, getTechEventStats } = require('../tech-events/tech-event.service');
+const TechEvent = require('../tech-events/tech-event.model');
 const { runNewsIngestion } = require('../news/news.service');
 const { fetchGithubAITrending } = require('../automation/github/github.service');
 const { fetchRSSFeeds } = require('../automation/rss/rss.service');
@@ -363,6 +365,72 @@ router.get(
         items,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
       },
+    });
+  })
+);
+
+// ── Tech Events admin endpoints ───────────────────────────────────────────────
+router.get(
+  '/admin/ops/tech-events/stats',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const stats = await getTechEventStats();
+    res.status(200).json({ success: true, stats });
+  })
+);
+
+router.post(
+  '/admin/ops/tech-events/sync',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const result = await fetchAndSyncTechEvents();
+    res.status(200).json({
+      success: true,
+      message: `Synced ${result.fetched} conferences from GitHub + dev.events. Deleted ${result.deleted} past events.`,
+      data: result,
+    });
+  })
+);
+
+router.post(
+  '/admin/ops/tech-events/cleanup',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+    const result = await TechEvent.deleteMany({ startDate: { $lt: todayStart } });
+    res.status(200).json({
+      success: true,
+      message: `Deleted ${result.deletedCount} past tech conferences.`,
+      data: { deleted: result.deletedCount },
+    });
+  })
+);
+
+router.get(
+  '/admin/ops/tech-events/list',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(50, parseInt(req.query.limit) || 20);
+    const filter = req.query.filter || 'upcoming';
+    const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+
+    const query = filter === 'past'
+      ? { startDate: { $lt: todayStart } }
+      : { startDate: { $gte: todayStart } };
+
+    const [total, items] = await Promise.all([
+      TechEvent.countDocuments(query),
+      TechEvent.find(query)
+        .sort({ startDate: filter === 'past' ? -1 : 1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: { items, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } },
     });
   })
 );

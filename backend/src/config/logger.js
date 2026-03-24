@@ -1,10 +1,21 @@
 function serializeValue(value) {
   if (value instanceof Error) {
-    return {
+    const serialized = {
       name: value.name,
       message: value.message,
       stack: value.stack,
     };
+
+    if (value.cause !== undefined) {
+      serialized.cause = serializeValue(value.cause);
+    }
+
+    for (const [key, item] of Object.entries(value)) {
+      if (serialized[key] !== undefined) continue;
+      serialized[key] = serializeValue(item);
+    }
+
+    return serialized;
   }
 
   if (Array.isArray(value)) {
