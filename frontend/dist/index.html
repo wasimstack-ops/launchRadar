@@ -22,16 +22,38 @@
     <script>
       (function () {
         try {
+          var isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+          if (isLocalDev) {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                registrations.forEach(function (registration) {
+                  registration.unregister().catch(function () {});
+                });
+              });
+            }
+
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                keys
+                  .filter(function (key) {
+                    return key.indexOf('wayb-static') === 0;
+                  })
+                  .forEach(function (key) {
+                    caches.delete(key).catch(function () {});
+                  });
+              });
+            }
+          }
+
           var t = localStorage.getItem('lr-theme');
           if (t === 'light') document.body.classList.add('theme-light');
         } catch (e) {}
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-BN2P694y.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DOcAXo2g.css">
+    <script type="module" crossorigin src="/assets/index-YHr8q3o5.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-B7SeWCHi.css">
   </head>
   <body>
     <div id="root"></div>
   </body>
 </html>
-

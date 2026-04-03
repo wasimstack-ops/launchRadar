@@ -1531,25 +1531,6 @@ body:not(.theme-light) .hero-feature-icon {
 .visit-link:hover { color: var(--accent-h); text-decoration: none; }
 
 /* Pagination */
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-  margin-top: 8px;
-}
-
-.page-info {
-  font-size: 0.8125rem;
-  color: var(--text-3);
-}
-
-.page-btns {
-  display: flex;
-  gap: 6px;
-}
-
 /* ---- 13. PRODUCT CARDS (category grid) ---- */
 .product-grid {
   display: grid;

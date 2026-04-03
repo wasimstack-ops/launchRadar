@@ -22,6 +22,29 @@
     <script>
       (function () {
         try {
+          var isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+          if (isLocalDev) {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                registrations.forEach(function (registration) {
+                  registration.unregister().catch(function () {});
+                });
+              });
+            }
+
+            if ('caches' in window) {
+              caches.keys().then(function (keys) {
+                keys
+                  .filter(function (key) {
+                    return key.indexOf('wayb-static') === 0;
+                  })
+                  .forEach(function (key) {
+                    caches.delete(key).catch(function () {});
+                  });
+              });
+            }
+          }
+
           var t = localStorage.getItem('lr-theme');
           if (t === 'light') document.body.classList.add('theme-light');
         } catch (e) {}
@@ -33,4 +56,3 @@
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-

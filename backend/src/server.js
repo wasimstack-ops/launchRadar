@@ -44,8 +44,9 @@ async function startServer() {
     startCryptoCron();
     startAgentsCron();
     startFuturepediaCron();
-    startEventsCron();
-    startTechEventsCron();
+    // Events are now sourced from frontend JSON, so keep both DB sync jobs disabled.
+    // startEventsCron();
+    // startTechEventsCron();
 
     server = app.listen(env.port, () => {
       logger.info(`Server running on port ${env.port}`);

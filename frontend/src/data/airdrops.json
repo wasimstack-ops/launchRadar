@@ -1,0 +1,95 @@
+{
+  "year": 2026,
+  "airdrops": [
+    {
+      "month": "February",
+      "project": "Aztec",
+      "token": "AZTEC",
+      "status": "confirmed",
+      "sector": "Privacy Layer 2",
+      "description": "Privacy-focused Ethereum Layer 2 with token unlock and governance activation expected in early 2026.",
+      "url": "https://aztec.network",
+      "thumbnail": "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+    },
+    {
+      "month": "February",
+      "project": "Espresso",
+      "token": "ESP",
+      "status": "confirmed",
+      "sector": "Modular Blockchain",
+      "description": "Modular blockchain launching token with airdrop distribution to early users and contributors.",
+      "url": "https://www.espressosys.com",
+      "thumbnail": "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+    },
+    {
+      "month": "March",
+      "project": "Backpack",
+      "token": "BP",
+      "status": "confirmed",
+      "sector": "Wallet / Exchange",
+      "description": "Wallet and exchange ecosystem distributing tokens to traders, points holders, and Mad Lads NFT participants.",
+      "url": "https://learn.backpack.exchange/articles/backpack-tge-date",
+      "thumbnail": "https://avatars.githubusercontent.com/u/121438012?s=200&v=4"
+    },
+    {
+      "month": "March",
+      "project": "OpenSea",
+      "token": "SEA",
+      "status": "confirmed",
+      "sector": "NFT Marketplace",
+      "description": "NFT marketplace token launching in Q1 2026 with rewards for historical and active trading users.",
+      "url": "https://opensea.io",
+      "thumbnail": "https://storage.googleapis.com/opensea-static/Logomark/Logomark-Blue.png"
+    },
+    {
+      "month": null,
+      "project": "Polymarket",
+      "token": "POLY",
+      "status": "expected",
+      "sector": "Prediction Market",
+      "description": "Prediction market token expected following regulatory expansion and increased platform activity.",
+      "url": "https://polymarket.com",
+      "thumbnail": "https://polymarket.com/favicon.ico"
+    },
+    {
+      "month": null,
+      "project": "MetaMask",
+      "token": "MASK",
+      "status": "speculative",
+      "sector": "Wallet",
+      "description": "Highly anticipated wallet token; potential airdrop based on swaps, bridging, and staking activity.",
+      "url": "https://metamask.io",
+      "thumbnail": "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+    },
+    {
+      "month": null,
+      "project": "Base",
+      "token": null,
+      "status": "speculative",
+      "sector": "Layer 2",
+      "description": "Potential ecosystem token tied to user activity on Coinbase's Layer 2 network.",
+      "url": "https://base.org",
+      "thumbnail": "https://avatars.githubusercontent.com/u/108554348?s=200&v=4"
+    },
+    {
+      "month": null,
+      "project": "LayerZero",
+      "token": "ZRO",
+      "status": "ongoing",
+      "sector": "Cross-chain Infrastructure",
+      "description": "Ongoing reward campaigns for cross-chain messaging, bridging, and dApp interactions.",
+      "url": "https://layerzero.network",
+      "thumbnail": "https://cryptologos.cc/logos/layerzero-zro-logo.png"
+    },
+    {
+      "month": null,
+      "project": "Hyperliquid",
+      "token": "HYPE",
+      "status": "ongoing",
+      "sector": "Perpetual DEX",
+      "description": "Ongoing trading rewards and future token distributions based on liquidity and trading activity.",
+      "url": "https://hyperliquid.xyz",
+      "thumbnail": "https://hyperliquid.xyz/favicon.ico"
+    }
+  ]
+}

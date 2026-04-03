@@ -23,6 +23,9 @@ import Footer from '../components/common/Footer';
 import AuthPromptModal from '../components/common/AuthPromptModal';
 
 const FALLBACK_THUMB = 'https://placehold.co/64x64/141b27/6366f1?text=?';
+const TOP_PRODUCTS_LIMIT = 15;
+const TRENDING_LIMIT = 8;
+const NEWS_LIMIT = 10;
 const HERO_IDEA_EXAMPLES = [
   'I want to build a SaaS tool for technical hiring teams to screen candidates faster.',
   'I want to build an AI workspace for small agencies to manage client content and reporting.',
@@ -200,9 +203,6 @@ function ListingsPage() {
 
   const [topics, setTopics] = useState([]);
   const [topToday, setTopToday] = useState([]);
-  const [topPage, setTopPage] = useState(1);
-  const [topTotalPages, setTopTotalPages] = useState(1);
-  const [topPaginationActive, setTopPaginationActive] = useState(false);
   const [newsItems, setNewsItems] = useState([]);
   const [trendingItems, setTrendingItems] = useState([]);
 
@@ -516,7 +516,7 @@ function ListingsPage() {
   // Load news
   useEffect(() => {
     setLoadingNews(true);
-    api.get('/api/news?limit=10&page=1')
+    api.get(`/api/news?limit=${NEWS_LIMIT}&page=1`)
       .then((r) => setNewsItems(Array.isArray(r.data?.data) ? r.data.data : []))
       .catch(() => setNewsItems([]))
       .finally(() => setLoadingNews(false));
@@ -526,7 +526,7 @@ function ListingsPage() {
   useEffect(() => {
     setLoadingTrending(true);
     setTrendingError('');
-    api.get('/api/producthunt/trending?limit=8')
+    api.get(`/api/producthunt/trending?limit=${TRENDING_LIMIT}`)
       .then((r) => setTrendingItems(Array.isArray(r.data?.data) ? r.data.data : []))
       .catch((err) => {
         setTrendingItems([]);
@@ -539,22 +539,18 @@ function ListingsPage() {
   useEffect(() => {
     setLoadingTopToday(true);
     setTopTodayError('');
-    api.get(`/api/producthunt/top-today?limit=15&page=${topPage}`)
+    api.get(`/api/producthunt/top-today?limit=${TOP_PRODUCTS_LIMIT}&page=1`)
       .then((r) => {
         const payload = r.data?.data || {};
         const data = Array.isArray(payload?.data) ? payload.data : [];
         setTopToday(data);
-        setTopTotalPages(Math.max(1, Number(payload?.totalPages || 1)));
-        setTopPaginationActive(Boolean(payload?.paginationActive || Number(payload?.total || 0) > 15));
       })
       .catch((err) => {
         setTopToday([]);
-        setTopTotalPages(1);
-        setTopPaginationActive(false);
         setTopTodayError(getFriendlyRequestMessage(err, 'Unable to load today\'s launches right now.'));
       })
       .finally(() => setLoadingTopToday(false));
-  }, [topPage]);
+  }, []);
 
   // Carousel auto-rotate
   useEffect(() => {
@@ -575,7 +571,8 @@ function ListingsPage() {
           String(p?.tagline || '').toLowerCase().includes(term)
         );
       })
-      .sort((a, b) => Number(b?.votesCount || 0) - Number(a?.votesCount || 0));
+      .sort((a, b) => Number(b?.votesCount || 0) - Number(a?.votesCount || 0))
+      .slice(0, TOP_PRODUCTS_LIMIT);
   }, [topToday, searchTerm]);
 
   const activeTrending = trendingItems[carouselIdx] || null;
@@ -998,30 +995,6 @@ function ListingsPage() {
                 ))}
               </div>
             )}
-
-            {!loadingTopToday && topPaginationActive && (
-              <div className="pagination">
-                <span className="page-info">Page {topPage} of {topTotalPages}</span>
-                <div className="page-btns">
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    disabled={topPage <= 1}
-                    onClick={() => setTopPage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft size={14} /> Prev
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    disabled={topPage >= topTotalPages}
-                    onClick={() => setTopPage((p) => Math.min(topTotalPages, p + 1))}
-                  >
-                    Next <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
           </section>
         </main>
 
@@ -1175,6 +1148,5 @@ function ListingsPage() {
 }
 
 export default ListingsPage;
-
 
 

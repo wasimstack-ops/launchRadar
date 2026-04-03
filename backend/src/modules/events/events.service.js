@@ -260,6 +260,11 @@ async function getEventDates() {
   return Array.from(dateSet);
 }
 
+async function clearAllEvents() {
+  const result = await CryptoEvent.deleteMany({});
+  return result.deletedCount || 0;
+}
+
 // ── cron ──────────────────────────────────────────────────────────────────────
 function startEventsCron() {
   if (eventsCronTask) return;
@@ -292,6 +297,7 @@ module.exports = {
   fetchAndSyncEvents,
   getEvents,
   getEventDates,
+  clearAllEvents,
   startEventsCron,
   stopEventsCron,
 };

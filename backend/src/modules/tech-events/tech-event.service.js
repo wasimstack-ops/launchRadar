@@ -217,6 +217,11 @@ async function getTechEventStats() {
   return { total, inPerson, online, thisWeek, lastSynced: latest?.updatedAt || null };
 }
 
+async function clearAllTechEvents() {
+  const result = await TechEvent.deleteMany({});
+  return result.deletedCount || 0;
+}
+
 // ── Cron ──────────────────────────────────────────────────────────────────────
 function startTechEventsCron() {
   if (cronTask) return;
@@ -245,6 +250,7 @@ module.exports = {
   fetchAndSyncTechEvents,
   getTechEvents,
   getTechEventStats,
+  clearAllTechEvents,
   startTechEventsCron,
   stopTechEventsCron,
 };
