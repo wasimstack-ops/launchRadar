@@ -14,24 +14,23 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from 'lucide-react';
-import api from '../api/client';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import styles from '../components/agents/Agents.module.css';
+import { STATIC_AGENT_DATA } from '../data/agentsCatalog';
 
 const PAGE_SIZE = 12;
-const FETCH_LIMIT = 150;
 
 const TABS = [
   {
+    key: 'ai',
     label: 'AI Agents',
-    endpoint: '/api/agents/ai',
     title: 'Explore AI Agents',
     subtitle: 'Discover and deploy the best autonomous tools for your workflow.',
   },
   {
+    key: 'repos',
     label: 'GitHub Repos',
-    endpoint: '/api/agents/repos',
     title: 'Explore GitHub Repositories',
     subtitle: 'Browse open-source AI agent repos, frameworks, and developer tooling.',
   },
@@ -108,58 +107,10 @@ function normalizeAgent(item) {
   };
 }
 
-function isLocalBrowser() {
-  if (typeof window === 'undefined') return false;
-  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-}
-
-function useFetchAgents(endpoint) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError('');
-
-    const load = async () => {
-      try {
-        let res = await api.get(endpoint, { params: { page: 1, limit: FETCH_LIMIT, sort: 'trending' } });
-        let data = res?.data?.data;
-        let rawItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-
-        // Hard fallback for the AI Agents tab when running locally:
-        // fetch straight from the local AI agents endpoint.
-        if (endpoint === '/api/agents/ai' && rawItems.length === 0 && isLocalBrowser()) {
-          res = await api.get('http://localhost:5000/api/agents/ai', {
-            params: { page: 1, limit: FETCH_LIMIT, sort: 'trending' },
-          });
-          data = res?.data?.data;
-          rawItems = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-        }
-
-        if (!mounted) return;
-        setItems(rawItems.map(normalizeAgent));
-      } catch (err) {
-        if (!mounted) return;
-        setError(err?.response?.data?.message || 'Failed to load data.');
-        setItems([]);
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
-      }
-    };
-
-    load();
-
-    return () => {
-      mounted = false;
-    };
-  }, [endpoint]);
-
-  return { items, loading, error };
-}
+const STATIC_ITEMS = {
+  ai: (Array.isArray(STATIC_AGENT_DATA?.ai) ? STATIC_AGENT_DATA.ai : []).map(normalizeAgent),
+  repos: (Array.isArray(STATIC_AGENT_DATA?.repos) ? STATIC_AGENT_DATA.repos : []).map(normalizeAgent),
+};
 
 function AgentsPage() {
   const [activeTab, setActiveTab] = useState(0);
@@ -170,8 +121,10 @@ function AgentsPage() {
   const [refine, setRefine] = useState({ openSource: false, freeTier: false, verified: false });
   const [sectionsOpen, setSectionsOpen] = useState({ categories: true, refine: true });
 
-  const { items, loading, error } = useFetchAgents(TABS[activeTab].endpoint);
   const activeView = TABS[activeTab];
+  const items = STATIC_ITEMS[activeView.key] || [];
+  const loading = false;
+  const error = '';
 
   const categoryCounts = useMemo(() => {
     const counts = new Map(CATEGORY_CONFIG.filter((item) => item.key !== 'all').map((item) => [item.key, 0]));
@@ -253,13 +206,13 @@ function AgentsPage() {
     <div>
       <Helmet>
         <title>AI Agents &amp; Repositories - Trending Tools | wayb</title>
-        <meta name="description" content="Discover trending AI agent frameworks, autonomous agents, and open-source repositories. Synced daily from GitHub." />
+        <meta name="description" content="Discover trending AI agent frameworks, autonomous agents, and open-source repositories in a static curated catalog." />
         <meta property="og:title" content="AI Agents & Repositories - Trending Tools | wayb" />
-        <meta property="og:description" content="Discover trending AI agent frameworks and open-source repos. Updated daily from GitHub." />
+        <meta property="og:description" content="Discover trending AI agent frameworks and open-source repos in a static curated catalog." />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="AI Agents & Repos | wayb" />
-        <meta name="twitter:description" content="Trending AI agents and open-source repositories, synced daily." />
+        <meta name="twitter:description" content="Trending AI agents and open-source repositories in a static curated catalog." />
       </Helmet>
 
       <Navbar />
@@ -393,7 +346,7 @@ function AgentsPage() {
               <div className={styles.emptyState}>
                 <p>
                   {items.length === 0
-                    ? 'No data yet - run a sync from the admin panel to populate this section.'
+                    ? 'No agents are available in this static catalog yet.'
                     : 'No agents match your filters. Try adjusting your search or categories.'}
                 </p>
               </div>

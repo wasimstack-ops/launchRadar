@@ -14,6 +14,14 @@ const {
   getTrendingProducts,
 } = require('./producthunt.service');
 const ProductHuntProduct = require('./producthunt-product.model');
+const { cacheMiddleware, TTL, invalidateMany } = require('../../../config/cache');
+
+const PH_PREFIXES = ['ph-topics', 'ph-categories', 'ph-products', 'ph-top-today', 'ph-trending'];
+function invalidatePH(req, res, next) {
+  const origJson = res.json.bind(res);
+  res.json = (body) => { invalidateMany(PH_PREFIXES); return origJson(body); };
+  next();
+}
 
 const router = express.Router();
 
@@ -35,7 +43,7 @@ router.get('/admin/automation/producthunt-topics-test', adminKeyMiddleware, asyn
   }
 });
 
-router.get('/producthunt/topics', async (req, res, next) => {
+router.get('/producthunt/topics', cacheMiddleware('ph-topics', TTL.VERY_LONG), async (req, res, next) => {
   try {
     const data = await getProductHuntTopics();
     res.status(200).json({ success: true, data });
@@ -44,7 +52,7 @@ router.get('/producthunt/topics', async (req, res, next) => {
   }
 });
 
-router.get('/producthunt/categories', async (req, res, next) => {
+router.get('/producthunt/categories', cacheMiddleware('ph-categories', TTL.VERY_LONG), async (req, res, next) => {
   try {
     const data = await getProductHuntTopics();
     res.status(200).json({ success: true, data });
@@ -71,7 +79,7 @@ router.get('/admin/automation/producthunt-products-all-topics-test', adminKeyMid
   }
 });
 
-router.get('/producthunt/products', async (req, res, next) => {
+router.get('/producthunt/products', cacheMiddleware('ph-products', TTL.MEDIUM), async (req, res, next) => {
   try {
     const topic = String(req.query.topic || '').trim();
     const query = topic ? { topic_slug: topic } : {};
@@ -84,7 +92,7 @@ router.get('/producthunt/products', async (req, res, next) => {
   }
 });
 
-router.get('/producthunt/top-today', async (req, res, next) => {
+router.get('/producthunt/top-today', cacheMiddleware('ph-top-today', TTL.SHORT), async (req, res, next) => {
   try {
     const limit = req.query.limit;
     const date = req.query.date;
@@ -96,7 +104,7 @@ router.get('/producthunt/top-today', async (req, res, next) => {
   }
 });
 
-router.get('/admin/automation/producthunt-top-products-sync', adminKeyMiddleware, async (req, res, next) => {
+router.get('/admin/automation/producthunt-top-products-sync', adminKeyMiddleware, invalidatePH, async (req, res, next) => {
   try {
     const limit = req.query.limit;
     const date = req.query.date;
@@ -107,7 +115,7 @@ router.get('/admin/automation/producthunt-top-products-sync', adminKeyMiddleware
   }
 });
 
-router.get('/admin/automation/producthunt-products-weekly-cleanup', adminKeyMiddleware, async (req, res, next) => {
+router.get('/admin/automation/producthunt-products-weekly-cleanup', adminKeyMiddleware, invalidatePH, async (req, res, next) => {
   try {
     const count = req.query.count;
     const data = await cleanupLowVoteProducts(count);
@@ -117,7 +125,7 @@ router.get('/admin/automation/producthunt-products-weekly-cleanup', adminKeyMidd
   }
 });
 
-router.get('/admin/automation/producthunt-products-weekly-refresh', adminKeyMiddleware, async (req, res, next) => {
+router.get('/admin/automation/producthunt-products-weekly-refresh', adminKeyMiddleware, invalidatePH, async (req, res, next) => {
   try {
     const data = await refreshAllTopicProductsWeekly();
     res.status(200).json({ success: true, data });
@@ -126,7 +134,7 @@ router.get('/admin/automation/producthunt-products-weekly-refresh', adminKeyMidd
   }
 });
 
-router.get('/admin/automation/producthunt-trending-sync', adminKeyMiddleware, async (req, res, next) => {
+router.get('/admin/automation/producthunt-trending-sync', adminKeyMiddleware, invalidatePH, async (req, res, next) => {
   try {
     const data = await syncTrendingProductsDaily();
     res.status(200).json({ success: true, data });
@@ -135,7 +143,7 @@ router.get('/admin/automation/producthunt-trending-sync', adminKeyMiddleware, as
   }
 });
 
-router.get('/producthunt/trending', async (req, res, next) => {
+router.get('/producthunt/trending', cacheMiddleware('ph-trending', TTL.SHORT), async (req, res, next) => {
   try {
     const limit = req.query.limit;
     const data = await getTrendingProducts(limit);

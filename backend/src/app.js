@@ -177,7 +177,8 @@ app.use(readLimiter);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  const { getStats } = require('./config/cache');
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString(), cache: getStats() });
 });
 
 // Stricter limits on sensitive endpoints

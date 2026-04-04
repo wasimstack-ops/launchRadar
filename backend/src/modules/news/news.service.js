@@ -3,6 +3,7 @@ const News = require('./news.model');
 const { createFetchLog } = require('../fetch-logs/fetch-log.service');
 const { generateAiSummary } = require('./ai-summary.service');
 const logger = require('../../config/logger');
+const { invalidate } = require('../../config/cache');
 
 const NEWS_SYNC_INTERVAL_MS = 2 * 60 * 60 * 1000;
 const NEWS_RETENTION_DAYS = 14;
@@ -381,6 +382,9 @@ function startNewsCron() {
     newsSyncRunning = true;
     try {
       const result = await runNewsIngestion({ trigger: 'cron', withCleanup: true });
+      invalidate('news');
+      invalidate('news-sources');
+      invalidate('leaderboard');
       logger.info(
         `[News Cron] feeds=${result.fetch.feedsProcessed}, fetched=${result.fetch.totalFetched}, matched=${result.fetch.totalMatched}, inserted=${result.fetch.totalInserted}, deletedByAge=${result.cleanup.deletedByAge}, deletedByOverflow=${result.cleanup.deletedByOverflow}`
       );

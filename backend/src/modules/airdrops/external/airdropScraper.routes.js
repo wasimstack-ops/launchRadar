@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const adminKeyMiddleware = require('../../../middleware/adminKey.middleware');
 const { fetchAirdropsExternalController, getAirdropsPublicController } = require('./airdropScraper.controller');
+const { cacheMiddleware, TTL, invalidate } = require('../../../config/cache');
 
 const router = express.Router();
 
@@ -16,12 +17,17 @@ const airdropExternalFetchLimiter = rateLimit({
   },
 });
 
-router.get('/airdrops', getAirdropsPublicController);
+router.get('/airdrops', cacheMiddleware('airdrops', TTL.LONG), getAirdropsPublicController);
 
 router.post(
   '/admin/airdrops/external/fetch',
   adminKeyMiddleware,
   airdropExternalFetchLimiter,
+  (req, res, next) => {
+    const origJson = res.json.bind(res);
+    res.json = (body) => { invalidate('airdrops'); return origJson(body); };
+    next();
+  },
   fetchAirdropsExternalController
 );
 

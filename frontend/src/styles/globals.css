@@ -2623,22 +2623,23 @@ body:not(.theme-light) .hero-feature-icon {
 /* ---- 22. CRYPTO DASHBOARD ---- */
 .crypto-shell {
   min-height: calc(100vh - var(--nav-h));
-  padding: 28px 0 56px;
+  padding: 32px 0 64px;
 }
 
 .crypto-header {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .crypto-title {
   font-size: clamp(1.5rem, 2.8vw, 2rem);
+  font-weight: 800;
   letter-spacing: -0.02em;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .crypto-subtitle {
   color: var(--text-2);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 .crypto-layout {
@@ -2659,19 +2660,25 @@ body:not(.theme-light) .hero-feature-icon {
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .crypto-table-wrap {
-  overflow: auto;
+  overflow-x: auto;
   max-width: 100%;
 }
 
 .crypto-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 600px;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
 }
+
+.crypto-table colgroup .col-coin   { width: 40%; }
+.crypto-table colgroup .col-price  { width: 30%; }
+.crypto-table colgroup .col-mcap   { width: 30%; }
 
 .crypto-table thead th {
   position: sticky;
@@ -2679,16 +2686,16 @@ body:not(.theme-light) .hero-feature-icon {
   z-index: 2;
   background: var(--surface);
   color: var(--text-2);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 12px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   text-transform: uppercase;
 }
 
 .crypto-table tbody td {
-  padding: 13px 14px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   font-size: 0.88rem;
@@ -2710,18 +2717,19 @@ body:not(.theme-light) .hero-feature-icon {
 .crypto-cell-right {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
 .crypto-coin-cell {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
 .crypto-coin-logo {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--border);
@@ -2733,12 +2741,13 @@ body:not(.theme-light) .hero-feature-icon {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .crypto-coin-name {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.9rem;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
@@ -2746,9 +2755,11 @@ body:not(.theme-light) .hero-feature-icon {
 }
 
 .crypto-coin-symbol {
-  color: var(--text-2);
-  font-size: 0.76rem;
+  color: var(--text-3);
+  font-size: 0.74rem;
+  font-weight: 500;
   line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .crypto-positive { color: var(--green) !important; }

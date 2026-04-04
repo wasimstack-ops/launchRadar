@@ -41,9 +41,13 @@ async function startServer() {
     startProductHuntWeeklyCleanupCron();
     startTrendingProductsDailyCron();
     startNewsCron();
-    startCryptoCron();
-    startAgentsCron();
-    startFuturepediaCron();
+    // Crypto is now sourced from a static frontend snapshot.
+    // Keep the backend market sync disabled to avoid refreshing the dataset.
+    // startCryptoCron();
+    // Agents and GitHub repos are now sourced from a static frontend catalog.
+    // Keep both backend sync jobs disabled to avoid refreshing the dataset.
+    // startAgentsCron();
+    // startFuturepediaCron();
     // Events are now sourced from frontend JSON, so keep both DB sync jobs disabled.
     // startEventsCron();
     // startTechEventsCron();

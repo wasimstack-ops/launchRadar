@@ -4,6 +4,9 @@ const ProductHuntProduct = require('./producthunt-product.model');
 const ProductHuntTopProduct = require('./producthunt-top-product.model');
 const ProductHuntTrending = require('./producthunt-trending.model');
 const logger = require('../../../config/logger');
+const { invalidateMany } = require('../../../config/cache');
+
+const PH_CACHE_PREFIXES = ['ph-topics', 'ph-categories', 'ph-products', 'ph-top-today', 'ph-trending'];
 
 const PRODUCTHUNT_GRAPHQL_URL = 'https://api.producthunt.com/v2/api/graphql';
 const TOP_PRODUCTS_SYNC_INTERVAL_MS = 5 * 60 * 1000;
@@ -964,6 +967,7 @@ function startTopProductsDailyCron() {
     try {
       const result = await syncTopProductsSnapshot(TOP_PRODUCTS_DAILY_INSERT_COUNT, null);
       const cleanup = await cleanupOldTopProducts(TOP_PRODUCTS_DAILY_DELETE_COUNT);
+      invalidateMany(PH_CACHE_PREFIXES);
       logger.info(
         `[ProductHunt Cron] synced snapshot ${result.snapshotDate}, saved=${result.saved}, fallback=${result.fallbackUsed}, oldDeleted=${cleanup.deleted}`
       );
@@ -1037,6 +1041,7 @@ function startProductHuntWeeklyCleanupCron() {
   const runCleanup = async () => {
     try {
       const result = await cleanupLowVoteProducts(WEEKLY_CLEANUP_DELETE_COUNT);
+      invalidateMany(PH_CACHE_PREFIXES);
       logger.info(
         `[ProductHunt Daily Cleanup] requested=${result.requested}, candidates=${result.candidates}, deleted=${result.deleted}`
       );
@@ -1069,6 +1074,7 @@ function startProductHuntWeeklyRefreshCron() {
   const runRefresh = async () => {
     try {
       const result = await refreshAllTopicProductsWeekly();
+      invalidateMany(PH_CACHE_PREFIXES);
       logger.info(
         `[ProductHunt Daily Refresh] topicsInserted=${result.topics.inserted}, topicsProcessed=${result.products.topicsProcessed}, totalInserted=${result.products.totalInserted}, totalUpdated=${result.products.totalUpdated}`
       );
@@ -1102,6 +1108,7 @@ function startTrendingProductsDailyCron() {
   const runSync = async () => {
     try {
       const result = await syncTrendingProductsDaily();
+      invalidateMany(PH_CACHE_PREFIXES);
       logger.info(
         `[ProductHunt Trending Cron] fetched=${result.fetched}, inserted=${result.inserted}, removed=${result.removed}, date=${result.sourceDate}`
       );

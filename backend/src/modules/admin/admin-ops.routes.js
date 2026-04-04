@@ -1,5 +1,6 @@
 const express = require('express');
 const requireAdminAccess = require('../../middleware/adminAccess.middleware');
+const { getStats: getCacheStats, flushAll: flushCache } = require('../../config/cache');
 
 const Listing = require('../listings/listing.model');
 const Lead = require('../leads/lead.model');
@@ -137,8 +138,18 @@ router.get(
           latestCrypto: latestCrypto || null,
           latestFetchLog: latestFetchLog || null,
         },
+        cache: getCacheStats(),
       },
     });
+  })
+);
+
+router.post(
+  '/admin/ops/cache/flush',
+  requireAdminAccess,
+  asyncHandler(async (req, res) => {
+    flushCache();
+    res.status(200).json({ success: true, message: 'Cache flushed' });
   })
 );
 

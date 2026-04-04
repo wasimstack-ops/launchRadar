@@ -2,6 +2,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 const CryptoCoin = require('./crypto.model');
 const logger = require('../../config/logger');
+const { invalidate } = require('../../config/cache');
 
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 const CRYPTO_CRON_EXPRESSION = '*/30 * * * *';
@@ -144,6 +145,8 @@ function startCryptoCron() {
 
     try {
       const result = await fetchTopCoins();
+      invalidate('crypto-top');
+      invalidate('crypto-trending');
       logger.info(`[Crypto Cron] fetched=${result.fetched}, upserted=${result.upserted}`);
     } catch (error) {
       if (!isRateLimitError(error)) {
